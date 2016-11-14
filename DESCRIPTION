@@ -1,0 +1,17 @@
+Package: extremesampling
+Type: Package
+Title: Asymptotic tests and model fitting for extreme phenotype sampling
+Version: 0.99.0
+Date: 2016-07-01
+Author: Thea Bjornland <thea.bjornland@math.ntnu.no>
+Maintainer: Thea Bjornland <thea.bjornland@math.ntnu.no>
+Description: This package provides tests and model fitting functions for genetic association studies under the extreme phenotype sampling design. Extreme phenotype sampling is a design for genetic association studies (here assuming SNP data) where only a certain number of individuals in a population can be genotyped. These individuals are selected based on observed phenotype or trait information. The phenotype is assumed to be normally distributed in the population, and individuals with phenotype values below a specified lower cut-off or above a specified upper cut-off are chosen for genotyping. The remaining individuals in the population have unknown genotype information. Tests and model fitting functions are available for two cases of extreme phenotype sampling. First, information on phenotypes and some non-genetic explanatory variables are available for all individuals, while genotype information is only available for the extremes. Then, the genotype information is missing at random for the non-extreme individuals. This design is here referred to as the EPS-complete design. A different design is where information on all types of variables is only available for the extremes. This is called the EPS-only design.
+License: Artistic-2.0
+LazyData: TRUE
+RoxygenNote: 5.0.1
+Imports:
+    MASS, stats
+Suggests:
+    knitr
+VignetteBuilder: knitr
+biocViews: Software, StatisticalMethod, Regression
