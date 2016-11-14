@@ -2,7 +2,7 @@
 #' @description
 #' \code{epscomp.lm} fits a normal linear regression model to EPS-complete data
 #' @param formula an object of class \code{\link[stats]{formula}}, that
-#' describes the linear regression model to be fitted
+#' describes the linear regression model to be fitted, see details
 #' @param hwe \code{TRUE} if Hardy-Weinberg equilibrium is assumed, default
 #' set to \code{FALSE}
 #' @param maf optional value for the minor allele frequencies under HWE
@@ -14,51 +14,69 @@
 #' @param cx optional vector of names of confounding (non-genetic) covariates
 #' @return Maximum likelihood estimates of the model parameters,
 #' with 95 percent confidence intervals
-#' \item{coef}{a vector of maximum likelihood estimates of the coefficients}
+#' \item{coefficients}{a vector of maximum likelihood estimates of the coefficients}
 #' \item{ci}{a matrix of confidence intervals for the coefficients}
 #' \item{sigma}{the estimated standard deviation}
 #' \item{maf}{the estimated minor allele frequencies, returned if
-#' \code{HWE = TRUE} both MAFs are unknown}
+#' \code{HWE = TRUE} but \code{MAF} is unspecified}
 #' @details
-#' The formula object is similar to that of the \code{lm} function,
-#' and describes a regression model, assuming a normal distribution for
-#' the residuals. See Examples.
+#' The \code{\link[stats]{formula}} object is of the type
+#' y~xe+xg, which describes a regression model, y=a+be*xe+bg*xg+e
+#' assuming a normal distribution for the residuals (e). The covariate
+#' xe is a non-genetic/environmental covariate (optional).
+#' The covariate xg is a SNP (single-nucleotide polymorphism).
+#' The variables are taken from the environment that the
+#' function is called from.
+#' Both xe and xg can be matrices.
 #'
-#' The data set must consist of observations of the response \code{y} of the
-#' linear regression model, and (optional) any non-genetic covariates. The
-#' genetic covariates (SNPs) must be observed only for the extreme-phenotype
-#' individuals, and missing values for the non-extremes should be coded as
-#' \code{NA}.
+#' The EPS-complete design is such that the SNP genotype is only observed
+#' for individuals with high and low values of the phenotype \code{y}.
+#' For remaining individuals, the unobserved genotype most be coded as NA.
+#' A SNP is assumed to have possible genotype 0, 1 or 2 according to the
+#' number of minor-alleles. The distribution of the genotype is assumed
+#' unknown and multinomially distributed. I.e. P(xg=0) = p0, P(xg=1) = p1,
+#' and P(xg=2) = p2 = 1-p0-p1.
+#' Hardy-Weinberg equilibrium with known or uknown MAF can be assumed,
+#' then p0 = (1-q)^2, p1 = 2q(1-q) and p2 = q^2, where q is the MAF.
+#' The parameters p0, p1, p2 can be given in \code{gfreq} if they are known.
 #'
 #' If confounder = TRUE, the genetic variables are assumed to be
 #' multinomally distributed, with different distribution
 #' for different levels of other (non-genetic) covariates, these can
 #' be specified by a vector of names \code{cx}.
 #'
-#' If confounder = FALSE, the distribution of \code{xg} is defined
-#' by minor allele frequency (MAF)
-#' and the genetic effect model.
 #' @import MASS stats
 #' @export
 #' @examples
-#' ## Create dataset:
-#' N = 2000
-#' xe = rnorm(n = N, mean = 2, sd = 1)
-#' maf = 0.2
-#' xg = sample(c(0,1,2),N,c((1-maf)^2,2*maf*(1-maf),maf^2), replace = TRUE)
-#' maf2 = 0.4
-#' xg2 = sample(c(0,1,2),N,c((1-maf2)^2,2*maf2*(1-maf2),maf2^2), replace = TRUE)
-#' a = 50; be = 5; bg = 0.3; sigma = 2
-#' y = rnorm(N, mean = a + be*xe + bg*xg, sd = sigma)
+#' N = 5000 # Number of individuals in a population
+#' xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
+#' xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
+#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
+#' xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
+#' # Model parameters
+#' a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
+#' # Generate response y
+#' y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
+#' # Identify extremes, here upper and lower 25% of population
 #' u = quantile(y,probs = 3/4,na.rm=TRUE)
 #' l = quantile(y,probs = 1/4,na.rm=TRUE)
 #' extreme = (y < l) | (y >= u)
-#' xg[!extreme] = NA
+#' # Create the EPS-complete data set by setting
+#' # the SNP values of non-extremes to NA
+#' xg1[!extreme] = NA
 #' xg2[!extreme] = NA
-#' ## Fit model:
-#' epscomp.lm(y~xe+xg+xg2,hwe = TRUE, maf = c(0.2,0.4))
-#' epscomp.lm(y~xe+xg+xg2)
-#' epscomp.lm(y~xe+xg+xg2, gfreq = c((1-maf)^2,2*maf*(1-maf),maf^2,(1-maf2)^2,2*maf2*(1-maf2),maf2^2))
+#' xg = as.matrix(cbind(xg1,xg2))
+#' xe = as.matrix(cbind(xe1,xe2))
+#'
+#' # Fit model
+#' epscomp.lm(y~xe1+xe2+xg1+xg2)
+#' # Alternatives
+#' # epscomp.lm(y~xe+xg)
+#' # epscomp.lm(y~xe+xg,hwe = TRUE)
+#'
+#' # Model with interaction term
+#' epscomp.lm(y~xe+xg+xe1*xg2)
+#'
 
 epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                       confounder = FALSE, cx){
@@ -67,8 +85,8 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
         stop("First argument must be of class formula")}
 
     options(na.action="na.pass")
-    epsdata = model.frame(formula)
-    covariates = model.matrix(formula)[,-1]
+        epsdata = model.frame(formula)
+        covariates = model.matrix(formula)[,-1]
     options(na.action="na.omit")
 
     n = dim(epsdata)[1]
@@ -187,8 +205,8 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 stop("Only discrete confounders with less than or equal to 10 unique levels are accepted as confounders. \n
                      Please recode you confounder to satisfy this.")
             }
-            }
         }
+    }
 
     geneffect = "additive"
 

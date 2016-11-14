@@ -15,39 +15,63 @@
 #' \item{parameter}{the degrees of freedom of the statistic}
 #' \item{p.value}{the P-value for the test}
 #' @details
-#' The \code{nullmodel} formula object are similar to that of the
-#' \code{lm} function, and describes a regression model,
-#' assuming a normal distribution for the residuals. The data are taken
-#' from the environment from which the function is called.
+#' The \code{nullmodel} \code{\link[stats]{formula}} object is of the type
+#' y~xe+xg, which describes a regression model, y=a+be*xe+bg*xg+e
+#' assuming a normal distribution for the residuals (e). The covariate
+#' xe is a non-genetic/environmental covariate (optional).
+#' The covariate xg is a SNP (single-nucleotide polymorphism).
+#' The variables are taken from the environment that the
+#' function is called from.
+#' Both xe and xg can be matrices.
 #'
-#' If there are more than one additional gene-environment interaction
-#' in \code{GE} to be tested against the null model, then if one-by-one is TRUE,
-#' each additional variable is seperately tested against the null model.
+#' The test considers a regression model y=a+be*xe+bg*xg+b*xe*xg+e,
+#' where b=0 under the null hypothesis. The output
+#' of the function gives the test statistic and p-value for the test of
+#' H0: b=0. The specific gene-environment interactions that should be
+#' tested is specified in \code{GE}.
 #'
-#' The data set must consist of observations only for extreme individuals
+#' The EPS-only design is such that data is only available
+#' for individuals with high and low values of the phenotype \code{y}. The
+#' cut-offs \code{l} and \code{u} that specify the sampling must be specified
+#' in the \code{cutoffs} argument.
+#'
+#' Thus, the data set must consist of observations only for extreme individuals
 #' \code{y > u} or \code{y < l} where \code{y} is the response (phenotype)
 #' of the linear regression model.
 #'
 #' @import MASS stats
 #' @export
 #' @examples
-#' ## Create dataset:
-#' N = 2000
-#' xe = rnorm(n = N, mean = 2, sd = 1)
-#' maf = 0.2
-#' xg = sample(c(0,1,2),N,c((1-maf)^2,2*maf*(1-maf),maf^2), replace = TRUE)
-#' a = 50; be = 5; bg = 0.3; sigma = 2
-#' y = rnorm(N, mean = a + be*xe + bg*xg, sd = sigma)
+#' N = 5000 # Number of individuals in a population
+#' xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
+#' xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
+#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
+#' xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
+#' # Model parameters
+#' a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
+#' # Generate response y
+#' y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
+#' # Identify extremes, here upper and lower 25% of population
 #' u = quantile(y,probs = 3/4,na.rm=TRUE)
 #' l = quantile(y,probs = 1/4,na.rm=TRUE)
 #' extreme = (y < l) | (y >= u)
+#' # Create the EPS-only data set
 #' y = y[extreme]
-#' xe = xe[extreme]
-#' xg = xg[extreme]
-#' ## Perform score test:
-#' epsonly.testGE(y~xe+xg,c("xe:xg"),cutoffs = c(l,u))
+#' xe1 = xe1[extreme]
+#' xe2 = xe2[extreme]
+#' xg1 = xg1[extreme]
+#' xg2 = xg2[extreme]
+#' xg = as.matrix(cbind(xg1,xg2))
+#' xe = as.matrix(cbind(xe1,xe2))
+#'
+#' epsonly.testGE(y~xe1+xe2+xg1+xg2, GE=c("xe1:xg1"), cutoffs=c(l,u))$p.value
+#' epsonly.testGE(y~xe+xg, GE=c("xe1:xg1"), cutoffs=c(l,u))$p.value
 
 epsonly.testGE = function(nullmodel,GE,cutoffs,onebyone = TRUE){
+
+    if(class(nullmodel)!="formula"){
+        stop("First argument must be of class formula")}
+
     if(length(cutoffs) != 2){stop("Invalid cutoffs vector given")}
 
     options(na.action="na.pass")
@@ -61,6 +85,30 @@ epsonly.testGE = function(nullmodel,GE,cutoffs,onebyone = TRUE){
     modeldata = cbind(epsdata0[,1],covariates0)
     l = min(cutoffs)
     u = max(cutoffs)
+
+    modelnames = attr(terms(nullmodel), "term.labels")
+    if(length(modelnames)!= dim(covariates0)[2]){
+        toformula = c()
+        for(i in 1:length(modelnames)){
+            mat = as.matrix(get(all.vars(nullmodel)[(i+1)]))
+            if(dim(mat)[2]>1){
+                for(j in 1:dim(mat)[2]){
+                    assign(colnames(mat)[j],mat[,j])
+                    toformula[length(toformula)+1] = colnames(mat)[j]
+                }
+            }else{
+                toformula[length(toformula)+1] = modelnames[i]
+            }
+
+        }
+        # then there is a covariate in the fomula that is a matrix
+        nullmodel = as.formula(paste("y ~ ", paste(toformula, collapse= "+")))
+        options(na.action="na.pass")
+        epsdata0 = model.frame(nullmodel)
+        covariates0 = model.matrix(nullmodel)[,-1]
+        options(na.action="na.omit")
+        modelnames = attr(terms(nullmodel), "term.labels")
+    }
 
     covariateorder = attr(terms(nullmodel), "order")
     maineffects = attr(terms(nullmodel),"term.labels")[covariateorder == 1]
@@ -162,7 +210,7 @@ epsonly.testGE = function(nullmodel,GE,cutoffs,onebyone = TRUE){
         ###################################################################
         if(nge > 10){
             stop("Do not test more than 10 interactions simultaneously,
-                 choose onebyone = TRUE")
+                     choose onebyone = TRUE")
         }
         x = as.matrix(covariates0)
 
@@ -217,5 +265,5 @@ epsonly.testGE = function(nullmodel,GE,cutoffs,onebyone = TRUE){
         result = list(c(t),nge,c(pval))
         names(result) = c("statistic","parameter","p.value")
         return(result)
-        }
+    }
 }

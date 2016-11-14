@@ -1,10 +1,9 @@
-#' @title Score test EPS-complete
-#'
+#' @title Test for associations under the EPS-complete design
 #' @description
 #' \code{epscomp.test} performs a score test for genetic variables in
 #' the EPS-complete design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
-#' describes the linear regression model under the null hypothesis
+#' describes the linear regression model under the null hypothesis, see details
 #' @param SNP a matrix of variables to be tested against the null
 #' @param onebyone \code{TRUE} if genetic variables should be tested one by one
 #' for inclusion in the model, default \code{TRUE}
@@ -12,69 +11,77 @@
 #' assumed dependent on other (non-genetic) covariates,
 #' default set to \code{FALSE}
 #' @param cx optional vector of names of confounding (non-genetic) covariates
-#' @return Maximum likelihood estimates of the model parameters,
-#' with 95 percent confidence intervals
-#' \item{coef}{a vector of maximum likelihood estimates of the coefficients}
-#' \item{ci}{a matrix of confidence intervals for the coefficients}
-#' \item{sigma}{the estimated standard deviation}
-#' \item{maf}{the estimated minor allele frequencies, returned if
-#' \code{HWE = TRUE} both MAFs are unknown}
+#' @return \code{epscomp.test} returns
+#' \item{statistic}{the value of the score test statistic}
+#' \item{parameter}{the degrees of freedom of the statistic}
+#' \item{p.value}{the P-value for the test}
 #' @details
-#' The formula object is similar to that of the \code{lm} function,
-#' and describes a regression model, assuming a normal distribution for
-#' the residuals. See Examples.
+#' The \code{nullmodel} \code{\link[stats]{formula}} object is of the type
+#' y~xe, which describes a regression model, y=a+be*xe+e
+#' assuming a normal distribution for the residuals (e). The covariate
+#' xe is a non-genetic/environmental covariate (optional).
+#' The variables are taken from the environment that the
+#' function is called from.
+#' The test considers a regression model y=a+be*xe+bg*xg+e, where xg is a
+#' genetic covariate, and where bg=0 under the null hypothesis. The output
+#' of the function gives the test statistic and p-value for the test of
+#' H0: bg=0.
+#' The covariate \code{xg} is a SNP (single-nucleotide polymorphism).
+#' Both xe and xg can be matrices.
 #'
-#' The data set must consist of observations of the response \code{y} of the
-#' linear regression model, and (optional) any non-genetic covariates. The
-#' genetic covariates (SNPs) must be observed only for the extreme-phenotype
-#' individuals, and missing values for the non-extremes should be coded as
-#' \code{NA}.
+#' The EPS-complete design is such that the SNP genotype is only observed
+#' for individuals with high and low values of the phenotype \code{y}.
+#' For remaining individuals, the unobserved genotype most be coded as NA.
+#' A SNP is assumed to have possible genotype 0, 1 or 2 according to the
+#' number of minor-alleles.
 #'
-#' If confounder = TRUE, the genetic variables are assumed to be
-#' multinomally distributed, with different distribution
-#' for different levels of other (non-genetic) covariates, these can
-#' be specified by a vector of names \code{cx}.
-#'
-#' If confounder = FALSE, the distribution of \code{xg} is defined
-#' by minor allele frequency (MAF)
-#' and the genetic effect model.
+#' If confounder = TRUE, the genetic variables are assumed to have
+#' different distribution for different levels of other (non-genetic)
+#' covariates, these can be specified by a vector of names \code{cx}.
 #' @import MASS stats
 #' @export
 #' @examples
-#' ## Create dataset:
-#' N = 2000
-#' xe = rnorm(n = N, mean = 2, sd = 1)
-#' maf = 0.2
-#' xg = sample(c(0,1,2),N,c((1-maf)^2,2*maf*(1-maf),maf^2), replace = TRUE)
-#' maf2 = 0.4
-#' xg2 = sample(c(0,1,2),N,c((1-maf2)^2,2*maf2*(1-maf2),maf2^2), replace = TRUE)
-#' a = 50; be = 5; bg = 0.3; sigma = 2
-#' y = rnorm(N, mean = a + be*xe + bg*xg, sd = sigma)
+#' N = 5000 # Number of individuals in a population
+#' xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
+#' xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
+#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
+#' xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
+#' # Model parameters
+#' a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
+#' # Generate response y
+#' y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
+#' # Identify extremes, here upper and lower 25% of population
 #' u = quantile(y,probs = 3/4,na.rm=TRUE)
 #' l = quantile(y,probs = 1/4,na.rm=TRUE)
 #' extreme = (y < l) | (y >= u)
-#' xg[!extreme] = NA
+#' # Create the EPS-complete data set by setting
+#' # the SNP values of non-extremes to NA
+#' xg1[!extreme] = NA
 #' xg2[!extreme] = NA
-#' ## Perform score test:
-#' epscomp.test(y~xe,cbind(xg,xg2))
-#' epscomp.test(y~xe,cbind(xg,xg2),onebyone = FALSE)
-#'
+#' xg = as.matrix(cbind(xg1,xg2))
+#' xe = as.matrix(cbind(xe1,xe2))
+#' epscomp.test(y~xe1+xe2,SNP = xg)$p.value
+#' epscomp.test(y~xe,SNP = xg,onebyone=FALSE)$p.value
+
 epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
                         confounder = FALSE, cx){
+    if(class(nullmodel)!="formula"){
+        stop("First argument must be of class formula")}
+
     if(is.null(colnames(SNP))){
         SNP = as.matrix(SNP)
         colnames(SNP) = paste0("SNP",1:dim(SNP)[2])}
 
     options(na.action="na.pass")
-    epsdata0 = model.frame(nullmodel)
-    covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
+        epsdata0 = model.frame(nullmodel)
+        covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
     options(na.action="na.omit")
 
     model0 = attr(terms(nullmodel),"term.labels")
 
     if(confounder & !onebyone){stop("The method is not available for
                                     confounding and testing multiple
-                                    genetic markers simultaneously")}
+                                     genetic markers simultaneously")}
 
     y = epsdata0[,1]
     n = length(y)
@@ -124,9 +131,9 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
                     stop("Only discrete confounders with less than or equal to 10 unique levels are accepted as confounders. \n
                          Please recode you confounder to satisfy this.")
                 }
-                }
             }
         }
+    }
 
     totest = colnames(SNP)
     xg = as.matrix(SNP)
@@ -263,23 +270,6 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
                     }
                 }
 
-                #                 print(unique(eg_ic))
-                #
-                #                 for(k in 1:length(y_ic)){
-                #                     if(!is.na(mean(g[x_cc[,cind] == x_ic[k,cind]])) &
-                #                        !is.na(var(g[x_cc[,cind] == x_ic[k,cind]])) ){
-                #                         eg_ic[k] = mean(g[x_cc[,cind] == x_ic[k,cind]])
-                #                         varg_ic[k] = var(g[x_cc[,cind] == x_ic[k,cind]])
-                #                         egg_ic[k] = varg_ic[k] + eg_ic[k]^2
-                #                     }else{
-                #                         eg_ic[k] = mean(g)
-                #                         varg_ic[k] = var(g)
-                #                         egg_ic[k] = varg_ic[k] + eg_ic[k]^2
-                #                     }
-                #                 }
-                #
-                #                 print(unique(eg_ic))
-
                 I11 = cbind(c(n,colSums(xe),2*sum(y-alpha-xe%*%beta)/sigma),
                             rbind(colSums(xe),t(xe)%*%xe,
                                   2*(t(y-alpha-xe%*%beta)%*%xe)/sigma),
@@ -304,7 +294,7 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
                 s = (sum((y_cc - alpha - x_cc%*%beta)*g) +
                          sum((y_ic - alpha-x_ic%*%beta)*eg_ic))/sigma2
                 t = (s*s)/Sigma
-                pval = pchisq(t,1,lower.tail=F)
+                pval = pchisq(t,1,lower.tail=FALSE)
 
                 statistic[i,] = t
                 parameter[i,] = 1
@@ -349,7 +339,7 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
                 Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12)
                 s = (sum((y_cc - alpha)*g) + sum((y_ic - alpha)*eg))/sigma2
                 t = (s*s)/Sigma
-                pval = pchisq(t,1,lower.tail=F)
+                pval = pchisq(t,1,lower.tail=FALSE)
 
                 statistic[i,] = t
                 parameter[i,] = 1
@@ -402,9 +392,9 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
             s = (t(y_cc - alpha - x_cc%*%beta)%*%g_cc +
                      sum(y_ic - alpha-x_ic%*%beta)*eg)/sigma2
             t = s%*%ginv(Sigma)%*%t(s)
-            pval = pchisq(t,ng,lower.tail=F)
+            pval = pchisq(t,ng,lower.tail=FALSE)
 
-            pval = pchisq(t,ng,lower.tail=F)
+            pval = pchisq(t,ng,lower.tail=FALSE)
             result = list(t,ng,pval)
             names(result) = c("statistic","parameter","p.value")
             return(result)
@@ -438,9 +428,9 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
             Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12)
             s = (t(y_cc - alpha)%*%g_cc + sum(y_ic - alpha)*eg)/sigma2
             t = s%*%ginv(Sigma)%*%t(s)
-            pval = pchisq(t,ng,lower.tail=F)
+            pval = pchisq(t,ng,lower.tail=FALSE)
 
-            pval = pchisq(t,ng,lower.tail=F)
+            pval = pchisq(t,ng,lower.tail=FALSE)
             result = list(t,ng,pval)
             names(result) = c("statistic","parameter","p.value")
             return(result)
