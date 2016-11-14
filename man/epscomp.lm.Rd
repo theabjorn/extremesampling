@@ -83,7 +83,6 @@ xg2[!extreme] = NA
 xg = as.matrix(cbind(xg1,xg2))
 xe = as.matrix(cbind(xe1,xe2))
 
-<<<<<<< HEAD
 # Fit model
 epscomp.lm(y~xe1+xe2+xg1+xg2)
 # Alternatives
@@ -93,11 +92,5 @@ epscomp.lm(y~xe1+xe2+xg1+xg2)
 # Model with interaction term
 epscomp.lm(y~xe+xg+xe1*xg2)
 
-=======
-epscomp.lm(y~xe1+xe2+xg1+xg2)
-epscomp.lm(y~xe+xg)
-epscomp.lm(y~xe+xg+xe1*xg2)
-epscomp.lm(y~xe+xg,hwe = TRUE)
->>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
 }
 
