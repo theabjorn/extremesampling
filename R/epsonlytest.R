@@ -1,10 +1,10 @@
-#' @title Test for associations under the EPS-only design
+#' @title Test genetic associations in the EPS-only design
 #' @description
 #' \code{epsonly.test} performs a score test for genetic variables
 #' in the EPS-only design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis
-#' @param SNP a matrix of variables to be tested against the null
+#' @param SNP a dataframe of variables to be tested against the null
 #' @param cutoffs a vector \code{c(l,u)} of the lower and upper cut-offs used
 #' for extreme sampling
 #' @param onebyone \code{TRUE} if genetic variables should be tested one by one
@@ -14,63 +14,42 @@
 #' \item{parameter}{the degrees of freedom of the statistic}
 #' \item{p.value}{the P-value for the test}
 #' @details
-#' The \code{nullmodel} \code{\link[stats]{formula}} object is of the type
-#' y~xe, which describes a regression model, y=a+be*xe+e
-#' assuming a normal distribution for the residuals (e). The covariate
-#' xe is a non-genetic/environmental covariate (optional).
-#' The variables are taken from the environment that the
-#' function is called from.
-#' The test considers a regression model y=a+be*xe+bg*xg+e, where xg is a
-#' genetic covariate, and where bg=0 under the null hypothesis. The output
-#' of the function gives the test statistic and p-value for the test of
-#' H0: bg=0.
-#' The covariate \code{xg} is a SNP (single-nucleotide polymorphism).
-#' Both xe and xg can be matrices.
+#' The \code{nullmodel} formula object are similar to that of the
+#' \code{lm} function, and describes a regression model,
+#' assuming a normal distribution for the residuals.
 #'
-#' The EPS-only design is such that data is only available
-#' for individuals with high and low values of the phenotype \code{y}. The
-#' cut-offs \code{l} and \code{u} that specify the sampling must be specified
-#' in the \code{cutoffs} argument.
+#' If there are more than one additional variable in \code{x} to be tested
+#' against the null model, then if one-by-one is TRUE, each additional variable
+#' is seperately tested against the null model.
 #'
-#' Thus, the data set must consist of observations only for extreme individuals
+#' The data set must consist of observations only for extreme individuals
 #' \code{y > u} or \code{y < l} where \code{y} is the response (phenotype)
 #' of the linear regression model.
 #'
 #' @import MASS stats
 #' @export
 #' @examples
-#' N = 5000 # Number of individuals in a population
-#' xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
-#' xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
-#' xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
-#' # Model parameters
-#' a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
-#' # Generate response y
-#' y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
-#' # Identify extremes, here upper and lower 25% of population
+#' ## Create dataset:
+#' N = 2000
+#' xe = rnorm(n = N, mean = 2, sd = 1)
+#' maf = 0.2
+#' xg = sample(c(0,1,2),N,c((1-maf)^2,2*maf*(1-maf),maf^2), replace = TRUE)
+#' maf2 = 0.4
+#' xg2 = sample(c(0,1,2),N,c((1-maf2)^2,2*maf2*(1-maf2),maf2^2), replace = TRUE)
+#' a = 50; be = 5; bg = 0.3; sigma = 2
+#' y = rnorm(N, mean = a + be*xe + bg*xg, sd = sigma)
 #' u = quantile(y,probs = 3/4,na.rm=TRUE)
 #' l = quantile(y,probs = 1/4,na.rm=TRUE)
 #' extreme = (y < l) | (y >= u)
-#' # Create the EPS-only data set
 #' y = y[extreme]
-#' xe1 = xe1[extreme]
-#' xe2 = xe2[extreme]
-#' xg1 = xg1[extreme]
+#' xe = xe[extreme]
+#' xg = xg[extreme]
 #' xg2 = xg2[extreme]
-#' xg = as.matrix(cbind(xg1,xg2))
-#' xe = as.matrix(cbind(xe1,xe2))
-#'
-#' epsonly.test(y~xe,SNP=xg,cutoffs = c(l,u))
-#' epsonly.test(y~xe,SNP=xg,cutoffs = c(l,u),onebyone = FALSE)
+#' ## Perform score test:
+#' epsonly.test(y~xe,data.frame(cbind(xg,xg2)),cutoffs = c(l,u))
+#' epsonly.test(y~xe,data.frame(cbind(xg,xg2)),cutoffs = c(l,u),onebyone = FALSE)
 
 epsonly.test = function(nullmodel,SNP,cutoffs,onebyone = TRUE){
-<<<<<<< HEAD
-    if(class(nullmodel)!="formula"){
-        stop("First argument must be of class formula")}
-
-=======
->>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
     if(length(cutoffs) != 2){stop("Invalid cutoffs vector given")}
     if(is.null(colnames(SNP))){
         SNP = as.matrix(SNP)
@@ -250,7 +229,7 @@ epsonly.test = function(nullmodel,SNP,cutoffs,onebyone = TRUE){
         ###################################################################
         if(ng > 10){
             stop("Do not test more than 10 SNPs simultaneously,
-                     choose onebyone = TRUE")
+                 choose onebyone = TRUE")
         }
         statistic = matrix(NA,ncol = 1, nrow = 1)
         parameter = matrix(NA,ncol = 1, nrow = 1)
@@ -349,5 +328,5 @@ epsonly.test = function(nullmodel,SNP,cutoffs,onebyone = TRUE){
             names(result) = c("statistic","parameter","p.value")
             return(result)
         }
-    }
+        }
 }

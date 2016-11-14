@@ -1,7 +1,8 @@
-#' @title Test for gene-environment associations under the EPS-complete design
+#' @title Likelihood ratio test EPS-complete
+#'
 #' @description
-#' \code{epscomp.testGE} performs a likelihood ratio test for gene-environment
-#' interaction variables under the EPS-complete design
+#' \code{epscomp.lrtest} performs a likelihood ratio test for genetic
+#' variables in the EPS-complete design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis
 #' @param GE a list of interactions, with the colon-symbol used to denote
@@ -17,81 +18,38 @@
 #' @param maf optional value for the minor allele frequencies under HWE
 #' @param gfreq frequencies of genotypes for each SNP if known or
 #' otherwise estimated
-#' @return \code{epscomp.testGE} returns
-#' \item{statistic}{the value of the score test statistic}
-#' \item{parameter}{the degrees of freedom of the statistic}
-#' \item{p.value}{the P-value for the test}
+#' @return Maximum likelihood estimates of the model parameters,
+#' with 95 percent confidence intervals
+#' \item{coef}{a vector of maximum likelihood estimates of the coefficients}
+#' \item{ci}{a matrix of confidence intervals for the coefficients}
+#' \item{sigma}{the estimated standard deviation}
+#' \item{maf}{the estimated minor allele frequencies, returned if
+#' \code{HWE = TRUE} both MAFs are unknown}
 #' @details
-#' The \code{nullmodel} \code{\link[stats]{formula}} object is of the type
-#' y~xe+xg, which describes a regression model, y=a+be*xe+bg*xg+e
-#' assuming a normal distribution for the residuals (e). The covariate
-#' xe is a non-genetic/environmental covariate (optional).
-#' The covariate xg is a SNP (single-nucleotide polymorphism).
-#' The variables are taken from the environment that the
-#' function is called from.
-#' Both xe and xg can be matrices.
+#' The formula object is similar to that of the \code{lm} function,
+#' and describes a regression model, assuming a normal distribution for
+#' the residuals. See Examples.
 #'
-#' The test considers a regression model y=a+be*xe+bg*xg+b*xe*xg+e,
-#' where b=0 under the null hypothesis. The output
-#' of the function gives the test statistic and p-value for the test of
-#' H0: b=0. The specific gene-environment interactions that should be
-#' tested is specified in \code{GE}.
-#'
-#' The EPS-complete design is such that the SNP genotype is only observed
-#' for individuals with high and low values of the phenotype \code{y}.
-#' For remaining individuals, the unobserved genotype most be coded as NA.
-#' A SNP is assumed to have possible genotype 0, 1 or 2 according to the
-#' number of minor-alleles. The distribution of the genotype is assumed
-#' unknown and multinomially distributed. I.e. P(xg=0) = p0, P(xg=1) = p1,
-#' and P(xg=2) = p2 = 1-p0-p1.
-#' Hardy-Weinberg equilibrium with known or uknown MAF can be assumed,
-#' then p0 = (1-q)^2, p1 = 2q(1-q) and p2 = q^2, where q is the MAF.
-#' The parameters p0, p1, p2 can be given in \code{gfreq} if they are known.
+#' The data set must consist of observations of the response \code{y} of the
+#' linear regression model, and (optional) any non-genetic covariates. The
+#' genetic covariates (SNPs) must be observed only for the extreme-phenotype
+#' individuals, and missing values for the non-extremes should be coded as
+#' \code{NA}.
 #'
 #' If confounder = TRUE, the genetic variables are assumed to be
 #' multinomally distributed, with different distribution
 #' for different levels of other (non-genetic) covariates, these can
 #' be specified by a vector of names \code{cx}.
+#'
+#' If confounder = FALSE, the distribution of \code{xg} is defined
+#' by minor allele frequency (MAF)
+#' and the genetic effect model.
 #' @import MASS stats
 #' @export
-#' @examples
-#' N = 5000 # Number of individuals in a population
-#' xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
-#' xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
-#' xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
-#' # Model parameters
-#' a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
-#' # Generate response y
-#' y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
-#' # Identify extremes, here upper and lower 25% of population
-#' u = quantile(y,probs = 3/4,na.rm=TRUE)
-#' l = quantile(y,probs = 1/4,na.rm=TRUE)
-#' extreme = (y < l) | (y >= u)
-#' # Create the EPS-complete data set by setting
-#' # the SNP values of non-extremes to NA
-#' xg1[!extreme] = NA
-#' xg2[!extreme] = NA
-#' xg = as.matrix(cbind(xg1,xg2))
-#' xe = as.matrix(cbind(xe1,xe2))
-#' epscomp.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
-<<<<<<< HEAD
-#' #Alternatively use matrix form
-#' #epscomp.testGE(y~xe+xg,GE = c("xe1:xg1"))$p.value
-
+#'
 epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
                           confounder = FALSE, cx, hwe = FALSE, maf,
                           gfreq){
-    if(class(nullmodel)!="formula"){
-        stop("First argument must be of class formula")}
-
-=======
-#' epscomp.testGE(y~xe+xg,GE = c("xe1:xg1"))$p.value
-
-epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
-                        confounder = FALSE, cx, hwe = FALSE, maf,
-                        gfreq){
->>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
     options(na.action="na.pass")
     epsdata0 = model.frame(nullmodel)
     covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
@@ -273,4 +231,3 @@ epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
         }
     }
 }
-
