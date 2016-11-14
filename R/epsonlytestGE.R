@@ -68,10 +68,13 @@
 #' epsonly.testGE(y~xe+xg, GE=c("xe1:xg1"), cutoffs=c(l,u))$p.value
 
 epsonly.testGE = function(nullmodel,GE,cutoffs,onebyone = TRUE){
+<<<<<<< HEAD
 
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
 
+=======
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
     if(length(cutoffs) != 2){stop("Invalid cutoffs vector given")}
 
     options(na.action="na.pass")

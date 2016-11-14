@@ -65,16 +65,24 @@
 
 epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
                         confounder = FALSE, cx){
+<<<<<<< HEAD
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
 
+=======
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
     if(is.null(colnames(SNP))){
         SNP = as.matrix(SNP)
         colnames(SNP) = paste0("SNP",1:dim(SNP)[2])}
 
     options(na.action="na.pass")
+<<<<<<< HEAD
         epsdata0 = model.frame(nullmodel)
         covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
+=======
+    epsdata0 = model.frame(nullmodel)
+    covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
     options(na.action="na.omit")
 
     model0 = attr(terms(nullmodel),"term.labels")
@@ -123,7 +131,11 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
         # Confounders
         if(confounder){
             if(missing(cx)){cx = model0}
+<<<<<<< HEAD
             message(paste("Confounders: ", toString(cx),sep=""))
+=======
+            print(paste("Confounders: ", toString(cx),sep=""))
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
             cind = match(cx,model0)
             xecind = as.matrix(covariates0[,cind])
             for(j in 1:length(cx)){
@@ -131,7 +143,11 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
                     stop("Only discrete confounders with less than or equal to 10 unique levels are accepted as confounders. \n
                          Please recode you confounder to satisfy this.")
                 }
+<<<<<<< HEAD
             }
+=======
+                }
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
         }
     }
 
@@ -270,6 +286,26 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
                     }
                 }
 
+<<<<<<< HEAD
+=======
+#                 print(unique(eg_ic))
+#
+#                 for(k in 1:length(y_ic)){
+#                     if(!is.na(mean(g[x_cc[,cind] == x_ic[k,cind]])) &
+#                        !is.na(var(g[x_cc[,cind] == x_ic[k,cind]])) ){
+#                         eg_ic[k] = mean(g[x_cc[,cind] == x_ic[k,cind]])
+#                         varg_ic[k] = var(g[x_cc[,cind] == x_ic[k,cind]])
+#                         egg_ic[k] = varg_ic[k] + eg_ic[k]^2
+#                     }else{
+#                         eg_ic[k] = mean(g)
+#                         varg_ic[k] = var(g)
+#                         egg_ic[k] = varg_ic[k] + eg_ic[k]^2
+#                     }
+#                 }
+#
+#                 print(unique(eg_ic))
+
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
                 I11 = cbind(c(n,colSums(xe),2*sum(y-alpha-xe%*%beta)/sigma),
                             rbind(colSums(xe),t(xe)%*%xe,
                                   2*(t(y-alpha-xe%*%beta)%*%xe)/sigma),
@@ -294,7 +330,11 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
                 s = (sum((y_cc - alpha - x_cc%*%beta)*g) +
                          sum((y_ic - alpha-x_ic%*%beta)*eg_ic))/sigma2
                 t = (s*s)/Sigma
+<<<<<<< HEAD
                 pval = pchisq(t,1,lower.tail=FALSE)
+=======
+                pval = pchisq(t,1,lower.tail=F)
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
 
                 statistic[i,] = t
                 parameter[i,] = 1
@@ -339,7 +379,11 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
                 Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12)
                 s = (sum((y_cc - alpha)*g) + sum((y_ic - alpha)*eg))/sigma2
                 t = (s*s)/Sigma
+<<<<<<< HEAD
                 pval = pchisq(t,1,lower.tail=FALSE)
+=======
+                pval = pchisq(t,1,lower.tail=F)
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
 
                 statistic[i,] = t
                 parameter[i,] = 1
@@ -392,9 +436,15 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
             s = (t(y_cc - alpha - x_cc%*%beta)%*%g_cc +
                      sum(y_ic - alpha-x_ic%*%beta)*eg)/sigma2
             t = s%*%ginv(Sigma)%*%t(s)
+<<<<<<< HEAD
             pval = pchisq(t,ng,lower.tail=FALSE)
 
             pval = pchisq(t,ng,lower.tail=FALSE)
+=======
+            pval = pchisq(t,ng,lower.tail=F)
+
+            pval = pchisq(t,ng,lower.tail=F)
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
             result = list(t,ng,pval)
             names(result) = c("statistic","parameter","p.value")
             return(result)
@@ -428,9 +478,15 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
             Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12)
             s = (t(y_cc - alpha)%*%g_cc + sum(y_ic - alpha)*eg)/sigma2
             t = s%*%ginv(Sigma)%*%t(s)
+<<<<<<< HEAD
             pval = pchisq(t,ng,lower.tail=FALSE)
 
             pval = pchisq(t,ng,lower.tail=FALSE)
+=======
+            pval = pchisq(t,ng,lower.tail=F)
+
+            pval = pchisq(t,ng,lower.tail=F)
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
             result = list(t,ng,pval)
             names(result) = c("statistic","parameter","p.value")
             return(result)

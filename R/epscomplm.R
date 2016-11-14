@@ -68,6 +68,7 @@
 #' xg = as.matrix(cbind(xg1,xg2))
 #' xe = as.matrix(cbind(xe1,xe2))
 #'
+<<<<<<< HEAD
 #' # Fit model
 #' epscomp.lm(y~xe1+xe2+xg1+xg2)
 #' # Alternatives
@@ -80,6 +81,15 @@
 
 epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                       confounder = FALSE, cx){
+=======
+#' epscomp.lm(y~xe1+xe2+xg1+xg2)
+#' epscomp.lm(y~xe+xg)
+#' epscomp.lm(y~xe+xg+xe1*xg2)
+#' epscomp.lm(y~xe+xg,hwe = TRUE)
+
+epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
+                     confounder = FALSE, cx){
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
 
     if(class(formula)!="formula"){
         stop("First argument must be of class formula")}
@@ -127,8 +137,13 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
         toformula = unique(toformula)
         formula = as.formula(paste("y ~ ", paste(toformula, collapse= "+")))
         options(na.action="na.pass")
+<<<<<<< HEAD
         epsdata = model.frame(formula)
         covariates = model.matrix(formula)[,-1]
+=======
+            epsdata = model.frame(formula)
+            covariates = model.matrix(formula)[,-1]
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
         options(na.action="na.omit")
         modelnames = attr(terms(formula), "term.labels")
     }
@@ -157,10 +172,18 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
         stop("No SNP-environment interaction without a SNP main effect")
     }
 
+<<<<<<< HEAD
     message(paste("Identified ", length(snpid), " SNP(s), ",
                 length(xid), " environmental covariate(s), ",
                 length(xxid), " environmental interaction(s), and ",
                 length(xsnpid), " gene-environment interaction(s). ",
+=======
+    print(paste("Identified ", length(snpid), " SNP(s), ",
+                length(xid), " environmental covariate(s), ",
+                length(xxid), " environmental interaction(s), and ",
+                length(xsnpid), " gene-environment interaction(s). ",
+                " If this is incorrect, remove NA-values from all environmental covariates ",
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
                 sep = ""))
 
     xg = as.matrix(covariates[,snpid])
@@ -179,7 +202,11 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
     maineffects = attr(terms(formula),"term.labels")[covariateorder == 1]
     if(interact){
         interactind = list()
+<<<<<<< HEAD
         message(paste("Interactions: ",modelnames[xsnpid],sep=""))
+=======
+        print(paste("Interactions: ",modelnames[xsnpid],sep=""))
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
         for(i in 1:length(xsnpid)){
             term = modelnames[xsnpid][i]
             t = match(strsplit(term,":")[[1]], maineffects)
@@ -196,7 +223,11 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
     if(confounder & isxe){
         if(hwe){stop("Confounders and Hardy-Weinberg equilibrium not allowed simultaneously")}
         if(missing(cx)){cx = maineffects[xid]}
+<<<<<<< HEAD
         message(paste("Confounders: ", toString(cx),sep=""))
+=======
+        print(paste("Confounders: ", toString(cx),sep=""))
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
         cind = match(match(cx,maineffects),xid)
         xecind = as.matrix(covariates[,cind])
         for(j in 1:length(cx)){
@@ -249,7 +280,11 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     # 1.1.1.1: MAF given
                     ###########################################################
+<<<<<<< HEAD
                     message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
+=======
+                    print(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
                     data = cbind(y,xg)
                     ng = dim(as.matrix(xg))[2]
                     model = epscomploglikmax(data, ng, hwe = TRUE, maf = maf,
@@ -277,7 +312,11 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     # 1.1.1.2: MAF not given
                     ###########################################################
+<<<<<<< HEAD
                     message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
+=======
+                    print("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
                     data = cbind(y,xg)
                     ng = dim(as.matrix(xg))[2]
                     model = epscomploglikmax(data, ng, hwe = TRUE,
@@ -318,7 +357,11 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     # 1.1.2.1: MAF given
                     ###########################################################
+<<<<<<< HEAD
                     message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequencies: ", toString(maf),sep = ""))
+=======
+                    print(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequencies: ", toString(maf),sep = ""))
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
                     model = epscomploglikmax(data,ng, hwe = TRUE, maf = maf,
                                              geneffect = "additive",
                                              hessian = TRUE)
@@ -345,7 +388,11 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     # 1.1.2.2: MAF not given
                     ###########################################################
+<<<<<<< HEAD
                     message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
+=======
+                    print("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
                     model = epscomploglikmax(data, ng, hwe = TRUE,
                                              geneffect = "additive",
                                              hessian = TRUE)
@@ -389,7 +436,11 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 ###########################################################
                 # 1.2.1: MAF given
                 ###########################################################
+<<<<<<< HEAD
                 message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
+=======
+                print(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
                 model = epscomploglikmaxint(data, ng, interactind,
                                             hwe = TRUE, maf = maf,
                                             geneffect = "additive",
@@ -416,7 +467,11 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 ###########################################################
                 # 1.2.1: MAF not given
                 ###########################################################
+<<<<<<< HEAD
                 message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
+=======
+                print("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
                 model = epscomploglikmaxint(data, ng, interactind,
                                             hwe = TRUE,
                                             geneffect = "additive",
@@ -564,7 +619,11 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 # 2.1.1: No confounders
                 ###############################################################
                 model = epscomploglikmaxint(data, ng, interactind = interactind,
+<<<<<<< HEAD
                                             geneffect = geneffect, hessian = TRUE)
+=======
+                                         geneffect = geneffect, hessian = TRUE)
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
                 params = model[[2]]
                 nparam = 1 + ne + ng + length(interactind)
                 sigma = params[(nparam + 1)]

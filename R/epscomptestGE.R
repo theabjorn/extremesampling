@@ -75,6 +75,7 @@
 #' xg = as.matrix(cbind(xg1,xg2))
 #' xe = as.matrix(cbind(xe1,xe2))
 #' epscomp.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
+<<<<<<< HEAD
 #' #Alternatively use matrix form
 #' #epscomp.testGE(y~xe+xg,GE = c("xe1:xg1"))$p.value
 
@@ -84,6 +85,13 @@ epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
 
+=======
+#' epscomp.testGE(y~xe+xg,GE = c("xe1:xg1"))$p.value
+
+epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
+                        confounder = FALSE, cx, hwe = FALSE, maf,
+                        gfreq){
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
     options(na.action="na.pass")
     epsdata0 = model.frame(nullmodel)
     covariates0 = as.matrix(model.matrix(nullmodel)[,-1])

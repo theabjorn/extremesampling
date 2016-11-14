@@ -1,6 +1,7 @@
 Package: extremesampling
 Type: Package
 Title: Asymptotic tests and model fitting for extreme phenotype sampling
+<<<<<<< HEAD
 Version: 0.99.0
 Date: 2016-07-01
 Author: Thea Bjornland <thea.bjornland@math.ntnu.no>
@@ -11,6 +12,18 @@ LazyData: TRUE
 RoxygenNote: 5.0.1
 Imports:
     MASS, stats
+=======
+Version: 0.2.1
+Date: 2016-07-01
+Author: Thea Bjornland <thea.bjornland@math.ntnu.no>
+Maintainer: Thea Bjornland <thea.bjornland@math.ntnu.no>
+Description: Asymptotic tests and model fitting for extreme phenotype sampling.
+License: GPL-3
+LazyData: TRUE
+RoxygenNote: 5.0.1
+Imports:
+    MASS
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
 Suggests:
     knitr
 VignetteBuilder: knitr

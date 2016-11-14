@@ -1,8 +1,13 @@
 ---
 title: "Extreme sampling"
 author: "Thea Bjornland"
+<<<<<<< HEAD
 date: "10 Nov 16"
 output: rmarkdown::html_vignette
+=======
+date: "4 Jul 2016"
+output: html_document
+>>>>>>> 1b791afdd78252ffd7d9f3f6b09f32302928e258
 ---
 This package provides functions for fitting linear regression models
 and testing hypothesis of genetic association with trait
