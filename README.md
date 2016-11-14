@@ -10,5 +10,5 @@ devtools::install_github("theabjorn/extremesampling")
 
 Tutorial and examples of usage https://github.com/theabjorn/extremesampling/blob/master/vignettes/vignette.Rmd
 
-Key words: Extreme phenotype sampling, selective genotyping, SNP, 
-outcome-dependent sampling
+Key words: Extreme phenotype sampling, selective genotyping, SNP-data, 
+outcome-dependent sampling, genetic association studies
