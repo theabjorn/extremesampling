@@ -120,74 +120,70 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>Example 1.3) Test gene-environment interactions</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># 1.1) Perform score test for one genetic covariate at a time</span>
     <span class="kw">epsonly.test</span>(y~xe1+xe2, <span class="dt">SNP=</span>xg, <span class="dt">cutoffs=</span><span class="kw">c</span>(l,u))$p.value</code></pre></div>
-<pre><code>## initial  value 4538.323772 
-## final  value 4490.013747 
+<pre><code>## initial  value 4547.244938 
+## final  value 4498.372871 
 ## converged</code></pre>
 <pre><code>##          p.value
-## xg1 2.231236e-07
-## xg2 1.693066e-22</code></pre>
+## xg1 2.180296e-05
+## xg2 8.014485e-22</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># alternatively, all environmental covariates can be gathered in a matrix</span>
     <span class="kw">epsonly.test</span>(y~xe, <span class="dt">SNP=</span>xg, <span class="dt">cutoffs=</span><span class="kw">c</span>(l,u))$p.value</code></pre></div>
-<pre><code>## initial  value 4538.323772 
-## final  value 4490.013747 
+<pre><code>## initial  value 4547.244938 
+## final  value 4498.372871 
 ## converged</code></pre>
 <pre><code>##          p.value
-## xg1 2.231236e-07
-## xg2 1.693066e-22</code></pre>
+## xg1 2.180296e-05
+## xg2 8.014485e-22</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># 1.2) Perform score test for all genetic covariates simultanously</span>
     <span class="kw">epsonly.test</span>(y~xe1+xe2, <span class="dt">SNP=</span>xg, <span class="dt">cutoffs=</span><span class="kw">c</span>(l,u), <span class="dt">onebyone =</span> <span class="ot">FALSE</span>)$p.value</code></pre></div>
-<pre><code>## initial  value 4538.323772 
-## final  value 4490.013747 
+<pre><code>## initial  value 4547.244938 
+## final  value 4498.372871 
 ## converged</code></pre>
 <pre><code>##           p.value
-## [1,] 1.979591e-27</code></pre>
+## [1,] 1.753823e-24</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># 1.3) Test gene-environment interaction</span>
     <span class="kw">epsonly.testGE</span>(y~xe1+xe2+xg1+xg2, <span class="dt">GE=</span><span class="kw">c</span>(<span class="st">&quot;xe1:xg1&quot;</span>), <span class="dt">cutoffs=</span><span class="kw">c</span>(l,u))$p.value</code></pre></div>
-<pre><code>## initial  value 4471.974183 
-## iter  10 value 4426.357369
-## iter  10 value 4426.357363
-## iter  10 value 4426.357363
-## final  value 4426.357363 
+<pre><code>## initial  value 4490.154805 
+## iter  10 value 4442.020468
+## final  value 4442.020389 
 ## converged</code></pre>
 <pre><code>##           p.value
-## xe1:xg1 0.3135805</code></pre>
+## xe1:xg1 0.1812481</code></pre>
 <p>Next we consider fitting a linear regression model of the form <code>y = a + be*xe + bg*xg + e</code> using data from the EPS-only design.</p>
 <p>Example 1.4) Fit a linear regression model to obtain parameter estimates and 95% confidence intervals</p>
 <p>Example 1.5) Fit a linear regression model with an interaction term</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># 1.4) Fit a linear model</span>
     <span class="kw">epsonly.lm</span>(y~xe1+xe2+xg1+xg2,<span class="dt">cutoffs =</span> <span class="kw">c</span>(l,u))</code></pre></div>
-<pre><code>## initial  value 4471.974183 
-## iter  10 value 4426.357369
-## iter  10 value 4426.357363
-## iter  10 value 4426.357363
-## final  value 4426.357363 
+<pre><code>## initial  value 4490.154805 
+## iter  10 value 4442.020468
+## final  value 4442.020389 
 ## converged</code></pre>
 <pre><code>## $coefficients
 ## (intercept)         xe1         xe2         xg1         xg2 
-##  50.0230370   4.9683721   8.0035197   0.3129386   0.6085551 
+##  50.1150589   5.0055275   7.8039242   0.2359408   0.5868493 
 ## 
 ## $ci
 ##             lower 95% ci upper 95% ci
-## (intercept)   49.8164881   50.2295859
-## xe1            4.8896165    5.0471276
-## xe2            7.7900204    8.2170189
-## xg1            0.2007853    0.4250919
-## xg2            0.4907038    0.7264064
+## (intercept)   49.9076959   50.3224219
+## xe1            4.9273266    5.0837284
+## xe2            7.5925362    8.0153121
+## xg1            0.1269184    0.3449632
+## xg2            0.4696753    0.7040234
 ## 
 ## $sigma
 ##          
-## 1.988962</code></pre>
+## 1.984344</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># alternatively with matrix inputs</span>
     <span class="co"># epsonly.lm(y~xe+xg,cutoffs = c(l,u))</span>
     
     <span class="co"># 1.5) Fit a linear model with an interaction term</span>
     <span class="kw">epsonly.lm</span>(y~xe1+xe2+xg1+xg2+xe2*xg1,<span class="dt">cutoffs =</span> <span class="kw">c</span>(l,u))$coefficients</code></pre></div>
-<pre><code>## initial  value 4472.070568 
-## iter  10 value 4426.353558
-## final  value 4426.353009 
+<pre><code>## initial  value 4489.279916 
+## iter  10 value 4441.231832
+## final  value 4441.231759 
 ## converged</code></pre>
 <pre><code>## (intercept)         xe1         xe2         xg1         xg2     xe2:xg1 
-## 50.02657535  4.96858570  7.99326604  0.30850814  0.60840177  0.01090031</code></pre>
+##  50.1637661   5.0052965   7.6749394   0.1786283   0.5890953   0.1424699</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># alternatively with matrix inputs</span>
     <span class="co"># epsonly.lm(y~xe+xg+xe2*xg1,cutoffs = c(l,u))$coefficients</span></code></pre></div>
 </div>
@@ -228,29 +224,29 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># 2.1) Perform score test for one genetic covariate at a time</span>
     <span class="kw">epscomp.test</span>(y~xe1+xe2,<span class="dt">SNP =</span> xg)$p.value</code></pre></div>
 <pre><code>##          p.value
-## xg1 5.962359e-08
-## xg2 8.772445e-30</code></pre>
+## xg1 9.540303e-11
+## xg2 9.646510e-33</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># alternatively with matrix inputs</span>
     <span class="kw">epscomp.test</span>(y~xe,<span class="dt">SNP =</span> xg)$p.value</code></pre></div>
 <pre><code>##          p.value
-## xg1 5.962359e-08
-## xg2 8.772445e-30</code></pre>
+## xg1 9.540303e-11
+## xg2 9.646510e-33</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># 2.2) Perform score test for all genetic covariates simultanously</span>
     <span class="kw">epscomp.test</span>(y~xe1+xe2,<span class="dt">SNP =</span> xg,<span class="dt">onebyone =</span> <span class="ot">FALSE</span>)$p.value</code></pre></div>
 <pre><code>##              [,1]
-## [1,] 6.405575e-36</code></pre>
+## [1,] 7.301705e-42</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># 2.3) Test interactions</span>
     <span class="kw">epscomp.testGE</span>(y~xe1+xe2+xg1+xg2,<span class="dt">GE =</span> <span class="kw">c</span>(<span class="st">&quot;xe1:xg1&quot;</span>))$p.value</code></pre></div>
-<pre><code>## initial  value 17715.094650 
-## iter  10 value 16313.805511
-## final  value 15905.219937 
+<pre><code>## initial  value 17677.485284 
+## iter  10 value 16477.522734
+## final  value 15963.857439 
 ## converged
-## initial  value 17706.500540 
-## iter  10 value 15922.286877
-## final  value 15903.844950 
+## initial  value 17675.518485 
+## iter  10 value 16094.826517
+## final  value 15963.729677 
 ## converged</code></pre>
-<pre><code>##         xe1:xg1
-## [1,] 0.09725596</code></pre>
+<pre><code>##        xe1:xg1
+## [1,] 0.6132126</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># alternatively with matrix inputs</span>
     <span class="co"># epscomp.testGE(y~xe+xg,GE = c(&quot;xe1:xg1&quot;))$p.value</span></code></pre></div>
 <p>Next we consider fitting the linear regression model <code>y = a + be*xe + bg*xg + e</code> using data from the EPS-complete design.</p>
@@ -259,25 +255,25 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># 2.4) Fit a linear model</span>
     <span class="kw">epscomp.lm</span>(y~xe1+xe2+xg1+xg2)</code></pre></div>
 <pre><code>## [1] &quot;Identified 2 SNP(s), 2 environmental covariate(s), 0 environmental interaction(s), and 0 gene-environment interaction(s).  If this is incorrect, remove NA-values from all environmental covariates &quot;
-## initial  value 17715.094650 
-## iter  10 value 16313.805511
-## final  value 15905.219937 
+## initial  value 17677.485284 
+## iter  10 value 16477.522734
+## final  value 15963.857439 
 ## converged</code></pre>
 <pre><code>## $coefficients
 ## (intercept)         xe1         xe2         xg1         xg2 
-##  50.0384737   5.0042609   8.0038331   0.2626565   0.5677983 
+##  49.9348818   5.0408034   7.9326372   0.3081749   0.5910505 
 ## 
 ## $ci
 ##             lower 95% ci upper 95% ci
-## (intercept)   49.8706518   50.2062955
-## xe1            4.9484791    5.0600426
-## xe2            7.8835663    8.1241000
-## xg1            0.1715286    0.3537844
-## xg2            0.4722346    0.6633620
+## (intercept)   49.7656579   50.1041056
+## xe1            4.9845712    5.0970355
+## xe2            7.8098486    8.0554258
+## xg1            0.2182061    0.3981436
+## xg2            0.4963965    0.6857045
 ## 
 ## $sigma
 ##          
-## 1.992697</code></pre>
+## 2.016716</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># alternatively with matrix inputs</span>
     <span class="co"># epscomp.lm(y~xe+xg)</span>
     
@@ -285,28 +281,28 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
     <span class="kw">epscomp.lm</span>(y~xe1+xe2+xg1+xg2+xe1*xg2)</code></pre></div>
 <pre><code>## [1] &quot;Identified 2 SNP(s), 2 environmental covariate(s), 0 environmental interaction(s), and 1 gene-environment interaction(s).  If this is incorrect, remove NA-values from all environmental covariates &quot;
 ## [1] &quot;Interactions: xe1:xg2&quot;
-## initial  value 17713.135548 
-## iter  10 value 15972.835000
-## final  value 15905.198429 
+## initial  value 17682.301387 
+## iter  10 value 16097.694240
+## final  value 15963.852711 
 ## converged</code></pre>
 <pre><code>## $coefficients
 ##  (intercept)          xe1          xe2          xg1          xg2 
-## 50.025879239  5.010574503  8.004013071  0.262617502  0.584939026 
+## 49.940712436  5.037947034  7.932564987  0.308139423  0.582771598 
 ##      xe1:xg2 
-## -0.008732029 
+##  0.004160875 
 ## 
 ## $ci
 ##             lower 95% ci upper 95% ci
-## (intercept)  49.82004096  50.23171751
-## xe1           4.92891458   5.09223443
-## xe2           7.88372535   8.12430079
-## xg1           0.17148599   0.35374902
-## xg2           0.39683843   0.77303962
-## xe1:xg2      -0.09124146   0.07377741
+## (intercept)  49.73521872   50.1462062
+## xe1           4.95764746    5.1182466
+## xe2           7.80977705    8.0553529
+## xg1           0.21816750    0.3981113
+## xg2           0.39129301    0.7742502
+## xe1:xg2      -0.07956615    0.0878879
 ## 
 ## $sigma
-##         
-## 1.99272</code></pre>
+##          
+## 2.016722</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># alternatively with matrix inputs</span>
     <span class="co"># epscomp.lm(y~xe+xg+xe1*xg2)</span></code></pre></div>
 <div id="eps-complete-and-hardy-weinberg" class="section level4">
@@ -339,46 +335,49 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
     <span class="kw">epscomp.lm</span>(y~xe+xg,<span class="dt">hwe =</span> <span class="ot">TRUE</span>, <span class="dt">maf =</span> q)</code></pre></div>
 <pre><code>## [1] &quot;Identified 1 SNP(s), 1 environmental covariate(s), 0 environmental interaction(s), and 0 gene-environment interaction(s).  If this is incorrect, remove NA-values from all environmental covariates &quot;
 ## [1] &quot;Hardy-Weinberg equilibrium assumed with known minor allele frequencies: 0.3&quot;
-## initial  value 13027.013255 
-## final  value 12951.447650 
+## initial  value 12870.851332 
+## final  value 12806.155950 
 ## converged</code></pre>
 <pre><code>## $coefficients
 ## (intercept)          xe          xg 
-##  50.0151824   4.9882019   0.4864426 
+##  49.9081514   5.0125177   0.5961994 
 ## 
 ## $ci
 ##             lower 95% ci upper 95% ci
-## (intercept)   49.8693582   50.1610067
-## xe             4.9326867    5.0437171
-## xg             0.3740474    0.5988378
+## (intercept)   49.7679055   50.0483974
+## xe             4.9582457    5.0667897
+## xg             0.4857486    0.7066502
 ## 
 ## $sigma
-##         
-## 2.00002</code></pre>
+##          
+## 1.952886</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># Fit a linear model with unknown minor allele frequency</span>
     <span class="kw">epscomp.lm</span>(y~xe+xg,<span class="dt">hwe =</span> <span class="ot">TRUE</span>)</code></pre></div>
 <pre><code>## [1] &quot;Identified 1 SNP(s), 1 environmental covariate(s), 0 environmental interaction(s), and 0 gene-environment interaction(s).  If this is incorrect, remove NA-values from all environmental covariates &quot;
 ## [1] &quot;Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.&quot;
-## initial  value 13195.162604 
-## final  value 12950.369105 
+## initial  value 12997.971421 
+## iter  10 value 12805.504939
+## iter  10 value 12805.504926
+## iter  10 value 12805.504926
+## final  value 12805.504926 
 ## converged</code></pre>
 <pre><code>## $coefficients
 ## (intercept)          xe          xg 
-##  50.0117689   4.9882119   0.4845589 
+##  49.9124647   5.0123475   0.5967303 
 ## 
 ## $ci
 ##             lower 95% ci upper 95% ci
-## (intercept)   49.8653375   50.1582003
-## xe             4.9326946    5.0437291
-## xg             0.3721953    0.5969224
+## (intercept)   49.7724082   50.0525212
+## xe             4.9580732    5.0666219
+## xg             0.4861422    0.7073184
 ## 
 ## $sigma
 ##          
-## 2.000002 
+## 1.953083 
 ## 
 ## $maf
-##           
-## 0.3094878</code></pre>
+##          
+## 0.292682</code></pre>
 </div>
 <div id="eps-complete-and-confounding-effects" class="section level4">
 <h4>EPS-complete and confounding effects</h4>
@@ -419,9 +418,9 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
     <span class="kw">epscomp.test</span>(y~xe1+xe2,<span class="dt">SNP =</span> xg,<span class="dt">confounder =</span> <span class="ot">TRUE</span>, <span class="dt">cx =</span> <span class="kw">c</span>(<span class="st">&quot;xe2&quot;</span>))</code></pre></div>
 <pre><code>## [1] &quot;Confounders: xe2&quot;</code></pre>
 <pre><code>## $statistic
-##              t
-## xg1 38.1277826
-## xg2  0.8167655
+##             t
+## xg1 35.981506
+## xg2  0.118571
 ## 
 ## $parameter
 ##     d.o.f
@@ -430,14 +429,14 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 ## 
 ## $p.value
 ##          p.value
-## xg1 6.625992e-10
-## xg2 3.661276e-01</code></pre>
+## xg1 1.991992e-09
+## xg2 7.305896e-01</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">    <span class="co"># Test (without confounding)</span>
     <span class="kw">epscomp.test</span>(y~xe1+xe2,<span class="dt">SNP =</span> xg)</code></pre></div>
 <pre><code>## $statistic
-##            t
-## xg1 40.03599
-## xg2 12.23672
+##             t
+## xg1 39.009531
+## xg2  6.370795
 ## 
 ## $parameter
 ##     d.o.f
@@ -446,8 +445,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 ## 
 ## $p.value
 ##          p.value
-## xg1 2.493262e-10
-## xg2 4.685814e-04</code></pre>
+## xg1 4.217414e-10
+## xg2 1.160136e-02</code></pre>
 </div>
 </div>
 
