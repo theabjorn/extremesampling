@@ -9,9 +9,7 @@ Description: This package provides tests and model fitting functions for genetic
 License: Artistic-2.0
 LazyData: TRUE
 RoxygenNote: 5.0.1
-Imports:
-    MASS, stats
-Suggests:
-    knitr
+Imports: MASS, stats
+Suggests: knitr
 VignetteBuilder: knitr
 biocViews: Software, StatisticalMethod, Regression
