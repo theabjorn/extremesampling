@@ -107,7 +107,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 assign(modelnames[i],covariates[,covind])
                 toformula[length(toformula)+1] = modelnames[i]
             }else{
-                mat = as.matrix(get(modelnames[i]))
+                mat = as.matrix(get(all.vars(formula)[(i+1)],envir = parent.frame()))
                 if(dim(mat)[2]>1){ # matrix covariate found
                     if(is.null(colnames(mat))){
                         warning("Matrix of covariates should have column names")

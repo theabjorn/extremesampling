@@ -81,7 +81,7 @@ epsonly.lm = function(formula,cutoffs){
             if(covariateorder[i] > 1){
                 toformula[length(toformula)+1] = modelnames[i]
             }else{
-                mat = as.matrix(get(all.vars(formula)[(i+1)]))
+                mat = as.matrix(get(all.vars(formula)[(i+1)],envir = parent.frame()))
                 if(dim(mat)[2]>1){
                     for(j in 1:dim(mat)[2]){
                         assign(colnames(mat)[j],mat[,j])

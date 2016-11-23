@@ -94,7 +94,7 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
             if(covariateorder[i] > 1){
                 tonullmodel[length(tonullmodel)+1] = modelnames[i]
             }else{
-                mat = as.matrix(get(all.vars(nullmodel)[(i+1)]))
+                mat = as.matrix(get(all.vars(nullmodel)[(i+1)],envir = parent.frame()))
                 if(dim(mat)[2]>1){
                     for(j in 1:dim(mat)[2]){
                         assign(colnames(mat)[j],mat[,j])

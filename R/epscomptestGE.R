@@ -80,7 +80,6 @@
 epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
                           confounder = FALSE, cx, hwe = FALSE, maf,
                           gfreq){
-    env = parent.frame()
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
 
@@ -96,7 +95,7 @@ epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
     if(length(modelnames)!= dim(covariates0)[2]){
         toformula = c()
         for(i in 1:length(modelnames)){
-            mat = as.matrix(get(all.vars(nullmodel)[(i+1)]))
+            mat = as.matrix(get(all.vars(nullmodel)[(i+1)],envir = parent.frame()))
             if(dim(mat)[2]>1){
                 for(j in 1:dim(mat)[2]){
                     assign(colnames(mat)[j],mat[,j])
