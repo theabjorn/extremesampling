@@ -64,46 +64,15 @@ epsonly.lm = function(formula,cutoffs){
         stop("First argument must be of class formula")}
 
     if(length(cutoffs) != 2){stop("Invalid cutoffs vector given")}
+
     options(na.action="na.pass")
-    epsdata = model.frame(formula)
-    covariates = model.matrix(formula)[,-1]
+        epsdata = model.frame(formula)
+        covariates = model.matrix(formula)[,-1]
     options(na.action="na.omit")
+    if(sum(is.na(epsdata)) > 1){stop("NA values in the data not allowed")}
 
     n = dim(epsdata)[1]
     y = epsdata[,1]
-
-    modelnames = attr(terms(formula), "term.labels")
-    covariateorder = attr(terms(formula), "order")
-
-    if(length(modelnames)!= dim(covariates)[2]){
-        toformula = c()
-        for(i in 1:length(modelnames)){
-            if(covariateorder[i] > 1){
-                toformula[length(toformula)+1] = modelnames[i]
-            }else{
-                mat = as.matrix(get(all.vars(formula)[(i+1)],envir = parent.frame()))
-                if(dim(mat)[2]>1){
-                    for(j in 1:dim(mat)[2]){
-                        assign(colnames(mat)[j],mat[,j])
-                        toformula[length(toformula)+1] = colnames(mat)[j]
-                    }
-                }else{
-                    toformula[length(toformula)+1] = modelnames[i]
-                }
-            }
-
-        }
-        # then there is a covariate in the fomula that is a matrix
-        toformula = unique(toformula)
-        formula = as.formula(paste("y ~ ", paste(toformula, collapse= "+")))
-        options(na.action="na.pass")
-        epsdata = model.frame(formula)
-        covariates = model.matrix(formula)[,-1]
-        options(na.action="na.omit")
-        modelnames = attr(terms(formula), "term.labels")
-    }
-
-    if(sum(is.na(epsdata)) > 1){stop("NA values in the data not allowed")}
 
     modeldata = cbind(epsdata[,1],covariates)
 

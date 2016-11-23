@@ -90,7 +90,7 @@ epscomp.lm(y~xe1+xe2+xg1+xg2)
 # epscomp.lm(y~xe+xg,hwe = TRUE)
 
 # Model with interaction term
-epscomp.lm(y~xe+xg+xe1*xg2)
+epscomp.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
 
 }
 

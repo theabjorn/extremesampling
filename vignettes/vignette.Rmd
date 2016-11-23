@@ -125,8 +125,7 @@ Example 1.5) Fit a linear regression model with an interaction term
     
     # 1.5) Fit a linear model with an interaction term
     epsonly.lm(y~xe1+xe2+xg1+xg2+xe2*xg1,cutoffs = c(l,u))$coefficients
-    # alternatively with matrix inputs
-    # epsonly.lm(y~xe+xg+xe2*xg1,cutoffs = c(l,u))$coefficients
+
     
 ```
 
@@ -195,8 +194,7 @@ Example 2.3) Test a gene-environment interaction
     
     # 2.3) Test interactions
     epscomp.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
-    # alternatively with matrix inputs
-    # epscomp.testGE(y~xe+xg,GE = c("xe1:xg1"))$p.value
+
 ```
 
 Next we consider fitting the linear regression model 
@@ -215,8 +213,7 @@ Example 2.5) Fit a linear regression model with gene-environment interactions
     
     # 2.5) Fit a linear model with an interaction term
     epscomp.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
-    # alternatively with matrix inputs
-    # epscomp.lm(y~xe+xg+xe1*xg2)
+
 ```
 
 #### EPS-complete and Hardy-Weinberg

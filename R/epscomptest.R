@@ -77,8 +77,6 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
         covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
     options(na.action="na.omit")
 
-    model0 = attr(terms(nullmodel),"term.labels")
-
     if(confounder & !onebyone){stop("The method is not available for
                                     confounding and testing multiple
                                      genetic markers simultaneously")}
@@ -86,49 +84,19 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
     y = epsdata0[,1]
     n = length(y)
 
-    modelnames = attr(terms(nullmodel), "term.labels")
-    covariateorder = attr(terms(nullmodel), "order")
-    if(length(modelnames)!= dim(covariates0)[2]){
-        tonullmodel = c()
-        for(i in 1:length(modelnames)){
-            if(covariateorder[i] > 1){
-                tonullmodel[length(tonullmodel)+1] = modelnames[i]
-            }else{
-                mat = as.matrix(get(all.vars(nullmodel)[(i+1)],envir = parent.frame()))
-                if(dim(mat)[2]>1){
-                    for(j in 1:dim(mat)[2]){
-                        assign(colnames(mat)[j],mat[,j])
-                        tonullmodel[length(tonullmodel)+1] = colnames(mat)[j]
-                    }
-                }else{
-                    tonullmodel[length(tonullmodel)+1] = modelnames[i]
-                }
-            }
-
-        }
-        # then there is a covariate in the fomula that is a matrix
-        tonullmodel = unique(tonullmodel)
-        nullmodel = as.formula(paste("y ~ ", paste(tonullmodel, collapse= "+")))
-        options(na.action="na.pass")
-        epsdata0 = model.frame(nullmodel)
-        covariates0 = model.matrix(nullmodel)[,-1]
-        options(na.action="na.omit")
-        modelnames = attr(terms(nullmodel), "term.labels")
-    }
-
     isxe = FALSE
     if(dim(covariates0)[2]>0){
         isxe = TRUE
         xe = covariates0
         # Confounders
         if(confounder){
-            if(missing(cx)){cx = model0}
+            if(missing(cx)){cx = colnames(covariates0)}
             print(paste("Confounders: ", toString(cx),sep=""))
-            cind = match(cx,model0)
+            cind = match(cx,colnames(covariates0))
             xecind = as.matrix(covariates0[,cind])
             for(j in 1:length(cx)){
                 if(length(unique(xecind[,j])) > 10){
-                    stop("Only discrete confounders with less than or equal to 10 unique levels are accepted as confounders. \n
+                    stop("Only discrete confounders with less than or equal to 10 unique levels are accepted as confounders.
                          Please recode you confounder to satisfy this.")
                 }
             }

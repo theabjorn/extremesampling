@@ -65,7 +65,6 @@
 #' xe = as.matrix(cbind(xe1,xe2))
 #'
 #' epsonly.testGE(y~xe1+xe2+xg1+xg2, GE=c("xe1:xg1"), cutoffs=c(l,u))$p.value
-#' epsonly.testGE(y~xe+xg, GE=c("xe1:xg1"), cutoffs=c(l,u))$p.value
 
 epsonly.testGE = function(nullmodel,GE,cutoffs,onebyone = TRUE){
 
@@ -86,38 +85,13 @@ epsonly.testGE = function(nullmodel,GE,cutoffs,onebyone = TRUE){
     l = min(cutoffs)
     u = max(cutoffs)
 
-    modelnames = attr(terms(nullmodel), "term.labels")
-    if(length(modelnames)!= dim(covariates0)[2]){
-        toformula = c()
-        for(i in 1:length(modelnames)){
-            mat = as.matrix(get(all.vars(nullmodel)[(i+1)],envir = parent.frame()))
-            if(dim(mat)[2]>1){
-                for(j in 1:dim(mat)[2]){
-                    assign(colnames(mat)[j],mat[,j])
-                    toformula[length(toformula)+1] = colnames(mat)[j]
-                }
-            }else{
-                toformula[length(toformula)+1] = modelnames[i]
-            }
-
-        }
-        # then there is a covariate in the fomula that is a matrix
-        nullmodel = as.formula(paste("y ~ ", paste(toformula, collapse= "+")))
-        options(na.action="na.pass")
-        epsdata0 = model.frame(nullmodel)
-        covariates0 = model.matrix(nullmodel)[,-1]
-        options(na.action="na.omit")
-        modelnames = attr(terms(nullmodel), "term.labels")
-    }
-
-    covariateorder = attr(terms(nullmodel), "order")
-    maineffects = attr(terms(nullmodel),"term.labels")[covariateorder == 1]
+    covnames = colnames(covariates0)
 
     nge = length(GE)
     n = dim(epsdata0)[1]
     xge = matrix(NA,ncol = nge,nrow = n)
     for(i in 1:nge){
-        t = match(strsplit(GE[i],":")[[1]], maineffects)
+        t = match(strsplit(GE[i],":")[[1]], covnames)
         if(sum(is.na(t)>0)){
             stop(paste("Cannot include interaction term ",toString(GE[i]),
                        ", because corresponding main effects were not found in the null model",

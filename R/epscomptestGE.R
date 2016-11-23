@@ -75,7 +75,6 @@
 #' xg = as.matrix(cbind(xg1,xg2))
 #' xe = as.matrix(cbind(xe1,xe2))
 #' epscomp.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
-#' epscomp.testGE(y~xe+xg,GE = c("xe1:xg1"))$p.value
 
 epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
                           confounder = FALSE, cx, hwe = FALSE, maf,
@@ -84,50 +83,20 @@ epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
         stop("First argument must be of class formula")}
 
     options(na.action="na.pass")
-    epsdata0 = model.frame(nullmodel)
-    covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
+        epsdata0 = model.frame(nullmodel)
+        covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
     options(na.action="na.omit")
 
     y = epsdata0[,1]
     n = length(y)
 
-    modelnames = attr(terms(nullmodel), "term.labels")
-    if(length(modelnames)!= dim(covariates0)[2]){
-        toformula = c()
-        for(i in 1:length(modelnames)){
-            mat = as.matrix(get(all.vars(nullmodel)[(i+1)],envir = parent.frame()))
-            if(dim(mat)[2]>1){
-                for(j in 1:dim(mat)[2]){
-                    assign(colnames(mat)[j],mat[,j])
-                    toformula[length(toformula)+1] = colnames(mat)[j]
-                }
-            }else{
-                toformula[length(toformula)+1] = modelnames[i]
-            }
+    covnames = colnames(covariates0)
 
-        }
-        # then there is a covariate in the fomula that is a matrix
-        nullmodel = as.formula(paste("y ~ ", paste(toformula, collapse= "+")))
-        options(na.action="na.pass")
-        epsdata0 = model.frame(nullmodel)
-        covariates0 = model.matrix(nullmodel)[,-1]
-        options(na.action="na.omit")
-        modelnames = attr(terms(nullmodel), "term.labels")
-    }
-
-    model0 = attr(terms(nullmodel),"term.labels")
-
-    y = epsdata0[,1]
-    n = length(y)
-    interactind = list()
-
-    covariateorder = attr(terms(nullmodel), "order")
-    maineffects = attr(terms(nullmodel),"term.labels")[covariateorder == 1]
-
+    # which main effects are SNPs and which are environment?
     snpid = c()
     xid = c()
-    nmain = sum(covariateorder == 1)
-    for(c in 1:nmain){
+    ncov = length(covnames)
+    for(c in 1:ncov){
         if(sum(is.na(covariates0[,c])) > 0){
             snpid[length(snpid)+1] = c
         }else if(sum(is.na(covariates0[,c])) == 0){
@@ -135,10 +104,12 @@ epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
         }
     }
 
+    # which main effects should interact?
+    interactind = list()
     nge = length(GE)
     xge = matrix(NA,ncol = nge,nrow = n)
     for(i in 1:nge){
-        t = match(strsplit(GE[i],":")[[1]], maineffects)
+        t = match(strsplit(GE[i],":")[[1]], covnames)
         if(sum(is.na(t)>0)){
             stop(paste("Cannot include interaction term ",toString(GE[i]),
                        ", because corresponding main effects were not found in the null model",
@@ -153,8 +124,8 @@ epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
         }
     }
 
-    if(confounder){stop("Confounding currently not allowed for
-                        the likelihood ratio rest")}
+    if(confounder){stop("Confounding currently not allowed for interactions")}
+
     geneffect = "additive"
     if(missing(gfreq)){gfreq = NA}
 

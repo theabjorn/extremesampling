@@ -75,7 +75,7 @@
 #' # epscomp.lm(y~xe+xg,hwe = TRUE)
 #'
 #' # Model with interaction term
-#' epscomp.lm(y~xe+xg+xe1*xg2)
+#' epscomp.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
 #'
 
 epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
@@ -94,74 +94,73 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
     if(sum(is.na(y))>0){
         stop("NA-values not allowed in response variable of regression model")}
 
-    modelnames = attr(terms(formula), "term.labels")
-    covariateorder = attr(terms(formula), "order")
-    if(length(modelnames)!= dim(covariates)[2]){
-        # there is a covariate in the formula that is a matrix
-        toformula = c()
-        # keep track of column index in covariates
-        covind = 0
-        for(i in 1:length(modelnames)){
-            if(covariateorder[i]>1){
-                covind = covind + 1
-                assign(modelnames[i],covariates[,covind])
-                toformula[length(toformula)+1] = modelnames[i]
-            }else{
-                mat = as.matrix(get(all.vars(formula)[(i+1)],envir = parent.frame()))
-                if(dim(mat)[2]>1){ # matrix covariate found
-                    if(is.null(colnames(mat))){
-                        warning("Matrix of covariates should have column names")
-                        colnames(mat) = paste0(modelnames[1],1:dim(mat)[2])
-                    }
-                    for(j in 1:dim(mat)[2]){
-                        covind = covind + 1
-                        assign(colnames(mat)[j],mat[,j]) # make a new vector
-                        toformula[length(toformula)+1] = colnames(mat)[j]
-                    }
-                }else{
-                    covind = covind + 1
-                    toformula[length(toformula)+1] = modelnames[i]
-                }
-            }
-        }
-        toformula = unique(toformula)
-        formula = as.formula(paste("y ~ ", paste(toformula, collapse= "+")))
-        options(na.action="na.pass")
-        epsdata = model.frame(formula)
-        covariates = model.matrix(formula)[,-1]
-        options(na.action="na.omit")
-        modelnames = attr(terms(formula), "term.labels")
-    }
-
     # Which covariates are snps, covariates, interactions?
-    covariateorder = attr(terms(formula), "order")
-    interact = FALSE
-    snpid = c()
-    xid = c()
+    # Interactions first
+    interact = FALSE # Refers to gene-environ interactions
+    interactind = list()
     xxid = c()
     xsnpid = c()
-    for(c in 1:dim(covariates)[2]){
-        if(covariateorder[c] == 1 & sum(is.na(covariates[,c])) > 0){
-            snpid[length(snpid)+1] = c
-        }else if(covariateorder[c] > 1 & sum(is.na(covariates[,c])) > 0){
-            xsnpid[length(xsnpid)+1] = c
-            interact = TRUE
-        }else if(covariateorder[c] == 1){
-            xid[length(xid)+1] = c
-        }else if(covariateorder[c] > 1){
-            xxid[length(xxid)+1] = c
+
+    modelnames = attr(terms(formula), "term.labels")
+    covariateorder = attr(terms(formula), "order")
+    covnames = colnames(covariates)
+    print(modelnames)
+    print(covariateorder)
+    print(covnames)
+    nint = sum(covariateorder>1)
+    if(nint > 0){
+        covintnames = modelnames[covariateorder > 1]
+        for(i in 1:nint){
+            if((!strsplit(covintnames[i],":")[[1]][1]%in%modelnames) |
+               (!strsplit(covintnames[i],":")[[1]][2]%in%modelnames)){
+                stop("No interactions without corresponding main effect in the model")
+            }
+            intid = which(covnames == covintnames[i])
+            if(sum(is.na(covariates[,intid]))>0){
+                # Interaction with SNP
+                interact = TRUE
+                xsnpid[length(xsnpid)+1] = intid
+                # also collect ids in list for other functions to use
+                term = covintnames[i]
+                print(term)
+                t = match(strsplit(term,":")[[1]], covnames)
+                interactind[[(length(interactind)+1)]] = t
+            }else{
+                xxid[length(xxid)+1] = intid
+            }
         }
     }
 
-    if(interact & is.null(snpid)){
-        stop("No SNP-environment interaction without a SNP main effect")
+    # we have located which columns in covariates are interactions
+    # now we classify main environment and snp
+    snpid = c()
+    xid = c()
+    colstocheck = c(1:dim(covariates)[2])
+    if(length(xsnpid)>0 | length(xxid)>0){
+        colstocheck = colstocheck[-c(xxid,xsnpid)]
+    }
+    for(i in 1:length(colstocheck)){
+        if(sum(is.na(covariates[,colstocheck[i]]))>0){
+            snpid[length(snpid)+1] = colstocheck[i]
+        }else{
+            xid[length(xid)+1] = colstocheck[i]
+        }
+    }
+
+    if(interact){
+        for(i in 1:length(interactind)){
+            t = interactind[[i]]
+            if(t[1] %in% snpid){
+                # always genetic variant first
+                interactind[[i]] = c(match(t[1],snpid),match(t[2],xid))
+            }else{ interactind[[i]] = c(match(t[2],snpid),match(t[1],xid)) }
+        }
     }
 
     print(paste("Identified ", length(snpid), " SNP(s), ",
                 length(xid), " environmental covariate(s), ",
                 length(xxid), " environmental interaction(s), and ",
                 length(xsnpid), " gene-environment interaction(s). ",
-                " If this is incorrect, remove NA-values from all environmental covariates ",
                 sep = ""))
 
     xg = as.matrix(covariates[,snpid])
@@ -170,35 +169,18 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
         isxe = TRUE
         xe = as.matrix(covariates[,c(xid,xxid)])
     }
-    newnames = c(modelnames[c(xid,xxid)],modelnames[snpid],modelnames[xsnpid])
+    newnames = c(covnames[c(xid,xxid)],covnames[snpid],covnames[xsnpid])
 
     if(hwe & missing(maf)){
         maf = NA
     }
     if(missing(gfreq)){gfreq = NA}
 
-    maineffects = attr(terms(formula),"term.labels")[covariateorder == 1]
-    if(interact){
-        interactind = list()
-        print(paste("Interactions: ",modelnames[xsnpid],sep=""))
-        for(i in 1:length(xsnpid)){
-            term = modelnames[xsnpid][i]
-            t = match(strsplit(term,":")[[1]], maineffects)
-            if(sum(is.na(t))>1){
-                stop("No interactions without corresponding main effect in the model")
-            }
-            if(t[1] %in% snpid){
-                # always genetic variant first
-                interactind[[i]] = c(match(t[1],snpid),match(t[2],xid))
-            }else{ interactind[[i]] = c(match(t[2],snpid),match(t[1],xid)) }
-        }
-    }
-
     if(confounder & isxe){
         if(hwe){stop("Confounders and Hardy-Weinberg equilibrium not allowed simultaneously")}
-        if(missing(cx)){cx = maineffects[xid]}
+        if(missing(cx)){cx = colnames(covariates)[xid]}
         print(paste("Confounders: ", toString(cx),sep=""))
-        cind = match(match(cx,maineffects),xid)
+        cind = match(match(cx,covariates),xid)
         xecind = as.matrix(covariates[,cind])
         for(j in 1:length(cx)){
             if(length(unique(xecind[,j])) > 10){

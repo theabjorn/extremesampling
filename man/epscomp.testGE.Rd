@@ -94,6 +94,5 @@ xg2[!extreme] = NA
 xg = as.matrix(cbind(xg1,xg2))
 xe = as.matrix(cbind(xe1,xe2))
 epscomp.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
-epscomp.testGE(y~xe+xg,GE = c("xe1:xg1"))$p.value
 }
 
