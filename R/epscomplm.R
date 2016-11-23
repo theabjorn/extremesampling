@@ -104,9 +104,6 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
     modelnames = attr(terms(formula), "term.labels")
     covariateorder = attr(terms(formula), "order")
     covnames = colnames(covariates)
-    print(modelnames)
-    print(covariateorder)
-    print(covnames)
     nint = sum(covariateorder>1)
     if(nint > 0){
         covintnames = modelnames[covariateorder > 1]
