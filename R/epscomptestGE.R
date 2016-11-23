@@ -80,6 +80,7 @@
 epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
                           confounder = FALSE, cx, hwe = FALSE, maf,
                           gfreq){
+    env = parent.frame()
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
 
