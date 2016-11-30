@@ -91,7 +91,7 @@ epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
         # Confounders
         if(confounder){
             if(missing(cx)){cx = colnames(covariates0)}
-            print(paste("Confounders: ", toString(cx),sep=""))
+            message(paste("Confounders: ", toString(cx),sep=""))
             cind = match(cx,colnames(covariates0))
             xecind = as.matrix(covariates0[,cind])
             for(j in 1:length(cx)){

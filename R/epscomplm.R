@@ -119,7 +119,6 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 xsnpid[length(xsnpid)+1] = intid
                 # also collect ids in list for other functions to use
                 term = covintnames[i]
-                print(term)
                 t = match(strsplit(term,":")[[1]], covnames)
                 interactind[[(length(interactind)+1)]] = t
             }else{
@@ -154,7 +153,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
         }
     }
 
-    print(paste("Identified ", length(snpid), " SNP(s), ",
+    message(paste("Identified ", length(snpid), " SNP(s), ",
                 length(xid), " environmental covariate(s), ",
                 length(xxid), " environmental interaction(s), and ",
                 length(xsnpid), " gene-environment interaction(s). ",
@@ -176,7 +175,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
     if(confounder & isxe){
         if(hwe){stop("Confounders and Hardy-Weinberg equilibrium not allowed simultaneously")}
         if(missing(cx)){cx = colnames(covariates)[xid]}
-        print(paste("Confounders: ", toString(cx),sep=""))
+        message(paste("Confounders: ", toString(cx),sep=""))
         cind = match(match(cx,covariates),xid)
         xecind = as.matrix(covariates[,cind])
         for(j in 1:length(cx)){
@@ -229,7 +228,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     # 1.1.1.1: MAF given
                     ###########################################################
-                    print(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
+                    message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
                     data = cbind(y,xg)
                     ng = dim(as.matrix(xg))[2]
                     model = epscomploglikmax(data, ng, hwe = TRUE, maf = maf,
@@ -257,7 +256,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     # 1.1.1.2: MAF not given
                     ###########################################################
-                    print("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
+                    message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
                     data = cbind(y,xg)
                     ng = dim(as.matrix(xg))[2]
                     model = epscomploglikmax(data, ng, hwe = TRUE,
@@ -298,7 +297,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     # 1.1.2.1: MAF given
                     ###########################################################
-                    print(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequencies: ", toString(maf),sep = ""))
+                    message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequencies: ", toString(maf),sep = ""))
                     model = epscomploglikmax(data,ng, hwe = TRUE, maf = maf,
                                              geneffect = "additive",
                                              hessian = TRUE)
@@ -325,7 +324,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     # 1.1.2.2: MAF not given
                     ###########################################################
-                    print("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
+                    message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
                     model = epscomploglikmax(data, ng, hwe = TRUE,
                                              geneffect = "additive",
                                              hessian = TRUE)
@@ -369,7 +368,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 ###########################################################
                 # 1.2.1: MAF given
                 ###########################################################
-                print(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
+                message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
                 model = epscomploglikmaxint(data, ng, interactind,
                                             hwe = TRUE, maf = maf,
                                             geneffect = "additive",
@@ -396,7 +395,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 ###########################################################
                 # 1.2.1: MAF not given
                 ###########################################################
-                print("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
+                message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
                 model = epscomploglikmaxint(data, ng, interactind,
                                             hwe = TRUE,
                                             geneffect = "additive",
