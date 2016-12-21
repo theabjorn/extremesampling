@@ -97,7 +97,7 @@ epscomploglikcond = function(parameters,data,ng,cind,geneffect = "additive"){
         id = idrows > 0 # index for individuals in block k
         genotypes = allgenotypes[[k]]
         genoprobs = allgenoprobs[[k]]
-        n_cck = sum(id)
+        n_cck = length(id)
         ind = rep(1,n_cck)
         for(j in 1:ng){
             ind = ind + g_cc[id,j]*(rowind)^(j-1)
