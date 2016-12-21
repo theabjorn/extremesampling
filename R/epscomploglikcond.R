@@ -103,7 +103,6 @@ epscomploglikcond = function(parameters,data,ng,cind,geneffect = "additive"){
             ind = ind + g_cc[id,j]*(rowind)^(j-1)
         }
         temp2 = temp2 + sum(log(genoprobs[ind]))
-        print(temp2)
     }
 
     # Add up contribution of completely observed individuals
