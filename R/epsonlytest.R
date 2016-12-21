@@ -154,11 +154,11 @@ epsonly.test = function(nullmodel,SNP,cutoffs,onebyone = TRUE){
 
             for(i in 1:ng){
                 gi = g[,i]
-                I22 = t(gi)%*%(diag(a[,1])%*%gi)
+                I22 = sum(gi*gi*a[,1])
 
-                I21_1 = t(t(a)%*%gi)
-                I21_2 = t(t(x)%*%(diag(a[,1])%*%gi))
-                I21_3 = t(b)%*%gi
+                I21_1 = sum(a[,1]*gi)
+                I21_2 = t(t(x)%*%(a[,1]*gi))
+                I21_3 = sum(b[,1]*gi)
                 I21 = cbind(I21_1,I21_2,I21_3)
                 I12 = t(I21)
 
