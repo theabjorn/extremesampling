@@ -97,13 +97,13 @@ epscomploglikcond = function(parameters,data,ng,cind,geneffect = "additive"){
         id = idrows > 0 # index for individuals in block k
         genotypes = allgenotypes[[k]]
         genoprobs = allgenoprobs[[k]]
-        n_cck = length(id)
+        n_cck = sum(id) # number of individuals in block k
         ind = rep(1,n_cck)
         for(j in 1:ng){
             ind = ind + g_cc[id,j]*(rowind)^(j-1)
         }
         temp2 = temp2 + sum(log(genoprobs[ind]))
-
+        print(temp2)
     }
 
     # Add up contribution of completely observed individuals
