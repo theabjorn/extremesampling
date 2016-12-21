@@ -176,7 +176,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
         if(hwe){stop("Confounders and Hardy-Weinberg equilibrium not allowed simultaneously")}
         if(missing(cx)){cx = colnames(covariates)[xid]}
         message(paste("Confounders: ", toString(cx),sep=""))
-        cind = match(match(cx,covariates),xid)
+        cind = match(match(cx,colnames(covariates)),xid)
         xecind = as.matrix(covariates[,cind])
         for(j in 1:length(cx)){
             if(length(unique(xecind[,j])) > 10){
