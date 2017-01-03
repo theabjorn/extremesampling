@@ -1,39 +1,27 @@
-# Log-likelihood function for EPS-complete
+# Log-likelihood function for EPS-full
 # Interactions, no confounding
+# Hardy-Weinberg eq assumed
 
-epscomploglikint = function(parameters,data,ng,interactind,
-                            geneffect = "additive"){
-    len = dim(data)[2]
-    neg = length(interactind)
-    m = parameters[(len+1+neg+1):length(parameters)]
-    param = parameters[1:(len+1+neg)]
-
+epsfullloglikinthwe = function(parameters,data,ng,interactind,maf = NA,
+                               geneffect = "additive"){
+    if(!is.na(as.matrix(maf)[1,1])){
+        # MAF supplied by the user
+        param = parameters
+    }else{
+        # MAF unknown (part of parameter vector)
+        m = parameters[(length(parameters)-ng + 1):length(parameters)]
+        maf = exp(m)/(1+exp(m))
+        param = parameters[1:(length(parameters)-ng)]
+    }
     # Extract all combinations of genotypes, and the
     # corresponding probability for each combination.
     # It is assumed that all genetic variables are statistically
-    # independent. Use function genprob().
-    if(geneffect == "additive"){
-        probs = c()
-        count = 1
-        for(t in 1:ng){
-            probs[count] = exp(m[count])/(1+exp(m[count]))
-            probs[count + 1] = (1-probs[count])*
-                exp(m[count+1])/(1+exp(m[count+1]))
-            count = count + 2
-        }
-        getgeno = genprob(ng,probs)
-        genotypes = as.matrix(getgeno[[1]])
-        genoprobs = getgeno[[2]]
-        #print(genoprobs)
-    }else{
-        probs = 0.9*exp(m)/(1+exp(m))
-        getgeno = genprob(ng,probs, geneffect = geneffect)
-        genotypes = as.matrix(getgeno[[1]])
-        genoprobs = getgeno[[2]]
-    }
+    # independent. Use function genprobhwe().
+    getgeno = genprobhwe(ng,maf,geneffect)
+    genotypes = as.matrix(getgeno[[1]])
+    genoprobs = getgeno[[2]]
 
-
-
+    len = dim(data)[2]
     data_cc = data[!is.na(data[,len]),]
     data_ic = data[is.na(data[,len]),1:(len-ng)]
 
@@ -45,19 +33,22 @@ epscomploglikint = function(parameters,data,ng,interactind,
     n_cc = length(y_cc)
     n_ic = length(y_ic)
 
+    # Interactions for complete case individuals
     neg = length(interactind)
     xg_cc = matrix(NA,ncol = length(interactind),nrow = n_cc)
     for(i in 1:neg){
         xg_cc[,i] = x_cc[,interactind[[i]][2]]*g_cc[,interactind[[i]][1]]
     }
-    interactgenotypes = list()
 
-    for (i in 1:dim(genotypes)[1]){
-        interactgenotypes[[i]] = matrix(NA,ncol = length(interactind),
+    # Interactions (all possible) for missing-genotype individuals
+    # Each list element represents
+    intgenotypes = list()
+    for(g in 1:dim(genotypes)[1]){
+        intgenotypes[[g]] = matrix(NA,ncol = length(interactind),
                                         nrow = n_ic)
         for(j in 1:neg){
-            interactgenotypes[[i]][,j] =
-                x_ic[,interactind[[j]][2]]*genotypes[i,interactind[[j]][1]]
+            intgenotypes[[g]][,j] =
+                x_ic[,interactind[[j]][2]]*genotypes[g,interactind[[j]][1]]
         }
     }
 
@@ -65,17 +56,17 @@ epscomploglikint = function(parameters,data,ng,interactind,
     alpha = param[1]
     betaE = param[2:(len-ng)]
     betaG = param[(len-ng+1):len]
-    betaEG = param[(len+1):(len+length(interactind))]
+    betaEG = param[(len+1):(lenp-1)]
     tau = param[lenp]; sigma2 = exp(tau); sigma = sqrt(sigma2)
 
     # Add up contribution to log-likelihood for all individuals
     # with missing genotypes, summing over all combinations of genotypes
     temp = 0
-    for (i in 1:dim(genotypes)[1]){
+    for (g in 1:dim(genotypes)[1]){
         temp = temp +
             exp(-(0.5*(y_ic - alpha - x_ic%*%betaE -
-                    c(t(genotypes[i,])%*%betaG) -
-                    interactgenotypes[[i]]%*%betaEG)^2)/sigma2)*genoprobs[i]
+                           c(t(genotypes[g,])%*%betaG) -
+                           intgenotypes[[g]]%*%betaEG)^2)/sigma2)*genoprobs[g]
     }
     temp = sum(log(temp*(1/(sqrt(2*pi)*sigma))))
 

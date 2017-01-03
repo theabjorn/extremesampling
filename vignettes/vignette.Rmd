@@ -43,7 +43,7 @@ number of minor-alleles. The effect of having one minor-allele is
 then `1*bg` while the effect of two minor-alleles is `2*bg`.
 
 This package handles two types of extreme sampling data: 
-**EPS-only** or **EPS-complete**.
+**EPS-only** or **EPS-full**.
 
 ### EPS-only
 
@@ -129,9 +129,9 @@ Example 1.5) Fit a linear regression model with an interaction term
     
 ```
 
-### EPS-complete
+### EPS-full
 
-For the **EPS-complete design**, the variables `y` and `xe` are observed for 
+For the **EPS-full design**, the variables `y` and `xe` are observed for 
 all individuals (in a population / random sample) while `xg` is observed only
 for the extreme phenotype individuals. The value of `xg` should be set to 
 `NA` for non-extreme phenotype individuals for which the genotype is not
@@ -139,11 +139,11 @@ observed. The functions for testing and
 model fitting are based on a likelihood model for missing at random covariates
 when the missing-mechanism is ignorable for likelihood inference. 
 
-The following example will be used throughout for illustrating EPS-complete
+The following example will be used throughout for illustrating EPS-full
 functions. 
 
 ```{r}
-    # Generate example data set of the type EPS-complete
+    # Generate example data set of the type EPS-full
 
     N = 5000 # Number of individuals in a population
     xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
@@ -162,7 +162,7 @@ functions.
     l = quantile(y,probs = 1/4,na.rm=TRUE)
     extreme = (y < l) | (y >= u)
     
-    # Create the EPS-complete data set by setting
+    # Create the EPS-full data set by setting
     # the SNP values of non-extremes to NA
     xg1[!extreme] = NA
     xg2[!extreme] = NA
@@ -172,7 +172,7 @@ functions.
 ```
 
 
-Below, we present a few key examples of testing for the EPS-complete design.
+Below, we present a few key examples of testing for the EPS-full design.
 
 Example 2.1) Test `H0: bg = 0` for each genetic covariate at a time. This is what
 you should use for a GWA type analysis. Each genetic variable is considered
@@ -185,20 +185,20 @@ Example 2.3) Test a gene-environment interaction
 
 ```{r}
     # 2.1) Perform score test for one genetic covariate at a time
-    epscomp.test(y~xe1+xe2,SNP = xg)$p.value
+    epsfull.test(y~xe1+xe2,SNP = xg)$p.value
     # alternatively with matrix inputs
-    epscomp.test(y~xe,SNP = xg)$p.value
+    epsfull.test(y~xe,SNP = xg)$p.value
     
     # 2.2) Perform score test for all genetic covariates simultanously
-    epscomp.test(y~xe1+xe2,SNP = xg,onebyone = FALSE)$p.value
+    epsfull.test(y~xe1+xe2,SNP = xg,onebyone = FALSE)$p.value
     
     # 2.3) Test interactions
-    epscomp.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
+    epsfull.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
 
 ```
 
 Next we consider fitting the linear regression model 
-`y = a + be*xe + bg*xg + e` using data from the EPS-complete design.
+`y = a + be*xe + bg*xg + e` using data from the EPS-full design.
 
 Example 2.4) Fit a linear regression model to obtain parameter estimates 
 and 95% confidence intervals
@@ -207,18 +207,18 @@ Example 2.5) Fit a linear regression model with gene-environment interactions
 
 ```{r}
     # 2.4) Fit a linear model
-    epscomp.lm(y~xe1+xe2+xg1+xg2)
+    epsfull.lm(y~xe1+xe2+xg1+xg2)
     # alternatively with matrix inputs
-    # epscomp.lm(y~xe+xg)
+    # epsfull.lm(y~xe+xg)
     
     # 2.5) Fit a linear model with an interaction term
-    epscomp.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
+    epsfull.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
 
 ```
 
-#### EPS-complete and Hardy-Weinberg
+#### EPS-full and Hardy-Weinberg
 
-The EPS-complete model is based on a likelihood model that incorporates the
+The EPS-full model is based on a likelihood model that incorporates the
 distribution of the covariate with missing values. That means that the 
 distribution of `xg` is assumed. In general, we assume that `xg` takes
 values 0, 1 or 2 with (unknown) probabilities `p0`, `p1` and `p2`, where
@@ -231,7 +231,7 @@ estimate. The following example illustrates model fitting under the
 Hardy-Weinberg assumption.
 
 ```{r}
-    # Generate example data set of the type EPS-complete
+    # Generate example data set of the type EPS-full
     # Assume Hardy-Weinberg
 
     N = 5000 # Number of individuals in a population
@@ -250,22 +250,22 @@ Hardy-Weinberg assumption.
     l = quantile(y,probs = 1/4,na.rm=TRUE)
     extreme = (y < l) | (y >= u)
     
-    # Create the EPS-complete data set by setting
+    # Create the EPS-full data set by setting
     # the SNP values of non-extremes to NA
     xg[!extreme] = NA
     
     # Fit a linear model with known minor allele frequency
-    epscomp.lm(y~xe+xg,hwe = TRUE, maf = q)
+    epsfull.lm(y~xe+xg,hwe = TRUE, maf = q)
     
     # Fit a linear model with unknown minor allele frequency
-    epscomp.lm(y~xe+xg,hwe = TRUE)
+    epsfull.lm(y~xe+xg,hwe = TRUE)
 ```
 
 
-#### EPS-complete and confounding effects
+#### EPS-full and confounding effects
 
 If there are confounding effects in the data, then this must
-be accounted for in the (unknown) distribution of `xg` in the EPS-complete 
+be accounted for in the (unknown) distribution of `xg` in the EPS-full 
 model. For example, if the distribution of a SNP in the population is 
 different between men and women, then the estimation of the distribution of 
 the SNP genotype must be conditioned on the sex of each individual. 
@@ -283,7 +283,7 @@ is found when confounding is not accounted for.
 
 
 ```{r}
-    # Generate example data set of the type EPS-complete
+    # Generate example data set of the type EPS-full
     # with confounding
 
     N = 5000 # Number of individuals in a population
@@ -314,9 +314,9 @@ is found when confounding is not accounted for.
     xg = cbind(xg1,xg2)
     
     # Test (with confounding)
-    epscomp.test(y~xe1+xe2,SNP = xg,confounder = TRUE, cx = c("xe2"))
+    epsfull.test(y~xe1+xe2,SNP = xg,confounder = TRUE, cx = c("xe2"))
     
     # Test (without confounding)
-    epscomp.test(y~xe1+xe2,SNP = xg)
+    epsfull.test(y~xe1+xe2,SNP = xg)
 ```
 

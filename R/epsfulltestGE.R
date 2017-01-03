@@ -1,7 +1,7 @@
-#' @title Test for gene-environment associations under the EPS-complete design
+#' @title Test for gene-environment associations under the EPS-full design
 #' @description
-#' \code{epscomp.testGE} performs a likelihood ratio test for gene-environment
-#' interaction variables under the EPS-complete design
+#' \code{epsfull.testGE} performs a likelihood ratio test for gene-environment
+#' interaction variables under the EPS-full design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis
 #' @param GE a list of interactions, with the colon-symbol used to denote
@@ -17,7 +17,7 @@
 #' @param maf optional value for the minor allele frequencies under HWE
 #' @param gfreq frequencies of genotypes for each SNP if known or
 #' otherwise estimated
-#' @return \code{epscomp.testGE} returns
+#' @return \code{epsfull.testGE} returns
 #' \item{statistic}{the value of the score test statistic}
 #' \item{parameter}{the degrees of freedom of the statistic}
 #' \item{p.value}{the P-value for the test}
@@ -37,7 +37,7 @@
 #' H0: b=0. The specific gene-environment interactions that should be
 #' tested is specified in \code{GE}.
 #'
-#' The EPS-complete design is such that the SNP genotype is only observed
+#' The EPS-full design is such that the SNP genotype is only observed
 #' for individuals with high and low values of the phenotype \code{y}.
 #' For remaining individuals, the unobserved genotype most be coded as NA.
 #' A SNP is assumed to have possible genotype 0, 1 or 2 according to the
@@ -68,15 +68,15 @@
 #' u = quantile(y,probs = 3/4,na.rm=TRUE)
 #' l = quantile(y,probs = 1/4,na.rm=TRUE)
 #' extreme = (y < l) | (y >= u)
-#' # Create the EPS-complete data set by setting
+#' # Create the EPS-full data set by setting
 #' # the SNP values of non-extremes to NA
 #' xg1[!extreme] = NA
 #' xg2[!extreme] = NA
 #' xg = as.matrix(cbind(xg1,xg2))
 #' xe = as.matrix(cbind(xe1,xe2))
-#' epscomp.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
+#' epsfull.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
 
-epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
+epsfull.testGE = function(nullmodel, GE, onebyone = TRUE,
                           confounder = FALSE, cx, hwe = FALSE, maf,
                           gfreq){
     if(class(nullmodel)!="formula"){
@@ -152,11 +152,11 @@ epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
             # Hardy Weinberg
             #######################################################
             if(missing(maf)){maf = NA}
-            fit0 = epscomploglikmax(data,ng, hwe = TRUE, maf = maf,
+            fit0 = epsfullloglikmax(data,ng, hwe = TRUE, maf = maf,
                                     geneffect = geneffect,
                                     ll = TRUE)[[1]]
             for(l in 1:nint){
-                fit1 = epscomploglikmaxint(data,ng = ng,
+                fit1 = epsfullloglikmaxint(data,ng = ng,
                                            hwe = TRUE, maf = maf,
                                            interactind = list(interactind[[l]]),
                                            ll = TRUE)[[1]]
@@ -174,11 +174,11 @@ epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
             #######################################################
             # Hardy Weinberg not assumed
             #######################################################
-            fit0 = epscomploglikmax(data,ng,
+            fit0 = epsfullloglikmax(data,ng,
                                     geneffect = geneffect,
                                     ll = TRUE)[[1]]
             for(l in 1:nint){
-                fit1 = epscomploglikmaxint(data,ng = ng,
+                fit1 = epsfullloglikmaxint(data,ng = ng,
                                            interactind = list(interactind[[l]]),
                                            ll = TRUE)[[1]]
                 t = -2*(fit0 - fit1)
@@ -201,11 +201,11 @@ epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
             # Hardy Weinberg
             #######################################################
             if(missing(maf)){maf = NA}
-            fit0 = epscomploglikmax(data,ng, hwe = TRUE, maf = maf,
+            fit0 = epsfullloglikmax(data,ng, hwe = TRUE, maf = maf,
                                     geneffect = geneffect,
                                     ll = TRUE)[[1]]
 
-            fit1 = epscomploglikmaxint(data,ng = ng,
+            fit1 = epsfullloglikmaxint(data,ng = ng,
                                        hwe = TRUE, maf = maf,
                                        interactind = interactind,
                                        ll = TRUE)[[1]]
@@ -219,11 +219,11 @@ epscomp.testGE = function(nullmodel, GE, onebyone = TRUE,
             #######################################################
             # Hardy Weinberg not assumed
             #######################################################
-            fit0 = epscomploglikmax(data,ng,
+            fit0 = epsfullloglikmax(data,ng,
                                     geneffect = geneffect,
                                     ll = TRUE)[[1]]
 
-            fit1 = epscomploglikmaxint(data,ng = ng,
+            fit1 = epsfullloglikmaxint(data,ng = ng,
                                        interactind = interactind,
                                        ll = TRUE)[[1]]
             t = -2*(fit0 - fit1)

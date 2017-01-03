@@ -1,7 +1,7 @@
-# Log-likelihood function for EPS-complete
+# Log-likelihood function for EPS-full
 # Confounding assumed, no interactions
 
-epscomploglikcond = function(parameters,data,ng,cind,geneffect = "additive"){
+epsfullloglikcond = function(parameters,data,ng,cind,geneffect = "additive"){
     len = dim(data)[2]
     m = parameters[(len+2):length(parameters)]
     param = parameters[1:(len+1)]

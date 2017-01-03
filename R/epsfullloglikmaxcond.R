@@ -1,8 +1,8 @@
-# Maximimize log-likelihood function for EPS-complete
+# Maximimize log-likelihood function for EPS-full
 # No interactions,  confounding
 
 
-epscomploglikmaxcond = function(data, ng, cind, ll = FALSE,
+epsfullloglikmaxcond = function(data, ng, cind, ll = FALSE,
                                 hessian = FALSE){
     len = dim(data)[2]
     data_cc = data[!is.na(data[,len]),]
@@ -18,7 +18,7 @@ epscomploglikmaxcond = function(data, ng, cind, ll = FALSE,
     probinit = rep(0.2,nprob)
     a.init = c(init$coef,log(summary(init)$sigma^2),log(probinit/(1-probinit)))
     result = optim(a.init,
-                   epscomploglikcond,
+                   epsfullloglikcond,
                    data = data,
                    ng = ng,
                    cind = cind,

@@ -1,32 +1,26 @@
-# Log-likelihood function for EPS-complete
+# Log-likelihood function for EPS-full
 # No interactions, no confounding
-# Genotype frequencies known
+# Hardy-Weinberg eq assumed
 
-epscomploglikgfreq = function(parameters,data,ng,gfreq,geneffect = "additive"){
-    len = dim(data)[2]
-    param = parameters[1:(len+1)]
-
+epsfullloglikhwe = function(parameters,data,ng,maf = NA,geneffect = "additive"){
+    if(!is.na(as.matrix(maf)[1,1])){
+        # MAF supplied by the user
+        param = parameters
+    }else{
+        # MAF unknown (part of parameter vector)
+        m = parameters[(length(parameters)-ng + 1):length(parameters)]
+        maf = exp(m)/(1+exp(m))
+        param = parameters[1:(length(parameters)-ng)]
+    }
     # Extract all combinations of genotypes, and the
     # corresponding probability for each combination.
     # It is assumed that all genetic variables are statistically
-    # independent. Use function genprob().
+    # independent. Use function genprobhwe().
+    getgeno = genprobhwe(ng,maf,geneffect)
+    genotypes = as.matrix(getgeno[[1]])
+    genoprobs = getgeno[[2]]
 
-    temp1 = list()
-    temp2 = list()
-
-    index = 1
-    for(i in 1:ng){
-        temp1[[i]] = c(0,1,2)
-        temp2[[i]] = c(gfreq[index],gfreq[index+1],gfreq[index+2])
-        index = index + 3
-    }
-    geno = expand.grid(temp1)
-    probs = expand.grid(temp2)
-    probs2 = apply(probs,1,prod)
-
-    genotypes = as.matrix(geno)
-    genoprobs = probs2
-
+    len = dim(data)[2]
     data_cc = data[!is.na(data[,len]),]
     data_ic = data[is.na(data[,len]),1:(len-ng)]
 
@@ -54,7 +48,8 @@ epscomploglikgfreq = function(parameters,data,ng,gfreq,geneffect = "additive"){
         for (i in 1:dim(genotypes)[1]){
             temp = temp +
                 exp(-(0.5*(y_ic - alpha - x_ic%*%betaE -
-                               c(t(genotypes[i,])%*%betaG))^2/sigma2))*genoprobs[i]
+                               c(t(genotypes[i,])%*%betaG))^2/sigma2)
+                    )*genoprobs[i]
         }
         temp = sum(log(temp*(1/(sqrt(2*pi)*sigma))))
 
@@ -97,7 +92,8 @@ epscomploglikgfreq = function(parameters,data,ng,gfreq,geneffect = "additive"){
         for (i in 1:dim(genotypes)[1]){
             temp = temp +
                 exp(-(0.5*(y_ic - alpha -
-                               c(t(genotypes[i,])%*%betaG))^2/sigma2))*genoprobs[i]
+                               c(t(genotypes[i,])%*%betaG))^2/sigma2)
+                    )*genoprobs[i]
         }
         temp = sum(log(temp*(1/(sqrt(2*pi)*sigma))))
 

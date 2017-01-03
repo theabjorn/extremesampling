@@ -1,10 +1,9 @@
-# Maximimize log-likelihood function for EPS-complete
+# Maximimize log-likelihood function for EPS-full
 # Interactions, confounding
 
 
-epscomploglikmaxcondint = function(data, ng, cind,interactind,
+epsfullloglikmaxcondint = function(data, ng, cind,interactind,
                                 ll = FALSE, hessian = FALSE){
-
     y = data[,1]
     xe = as.matrix(data[,2:(dim(data)[2]-ng)])
     xg = as.matrix(data[,(dim(data)[2]-ng+1):(dim(data)[2])])
@@ -30,7 +29,7 @@ epscomploglikmaxcondint = function(data, ng, cind,interactind,
     probinit = rep(0.2,nprob)
     a.init = c(init$coef,log(summary(init)$sigma^2),log(probinit/(1-probinit)))
     result = optim(a.init,
-                   epscomploglikintcond,
+                   epsfullloglikintcond,
                    data = data,
                    ng = ng,
                    interactind = interactind,

@@ -1,6 +1,6 @@
-#' Fit linear model to EPS-complete data
+#' Fit linear model to EPS-full data
 #' @description
-#' \code{epscomp.lm} fits a normal linear regression model to EPS-complete data
+#' \code{epsfull.lm} fits a normal linear regression model to EPS-full data
 #' @param formula an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model to be fitted, see details
 #' @param hwe \code{TRUE} if Hardy-Weinberg equilibrium is assumed, default
@@ -29,7 +29,7 @@
 #' function is called from.
 #' Both xe and xg can be matrices.
 #'
-#' The EPS-complete design is such that the SNP genotype is only observed
+#' The EPS-full design is such that the SNP genotype is only observed
 #' for individuals with high and low values of the phenotype \code{y}.
 #' For remaining individuals, the unobserved genotype most be coded as NA.
 #' A SNP is assumed to have possible genotype 0, 1 or 2 according to the
@@ -61,7 +61,7 @@
 #' u = quantile(y,probs = 3/4,na.rm=TRUE)
 #' l = quantile(y,probs = 1/4,na.rm=TRUE)
 #' extreme = (y < l) | (y >= u)
-#' # Create the EPS-complete data set by setting
+#' # Create the EPS-full data set by setting
 #' # the SNP values of non-extremes to NA
 #' xg1[!extreme] = NA
 #' xg2[!extreme] = NA
@@ -69,16 +69,16 @@
 #' xe = as.matrix(cbind(xe1,xe2))
 #'
 #' # Fit model
-#' epscomp.lm(y~xe1+xe2+xg1+xg2)
+#' epsfull.lm(y~xe1+xe2+xg1+xg2)
 #' # Alternatives
-#' # epscomp.lm(y~xe+xg)
-#' # epscomp.lm(y~xe+xg,hwe = TRUE)
+#' # epsfull.lm(y~xe+xg)
+#' # epsfull.lm(y~xe+xg,hwe = TRUE)
 #'
 #' # Model with interaction term
-#' epscomp.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
+#' epsfull.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
 #'
 
-epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
+epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                       confounder = FALSE, cx){
 
     if(class(formula)!="formula"){
@@ -231,7 +231,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
                     data = cbind(y,xg)
                     ng = dim(as.matrix(xg))[2]
-                    model = epscomploglikmax(data, ng, hwe = TRUE, maf = maf,
+                    model = epsfullloglikmax(data, ng, hwe = TRUE, maf = maf,
                                              geneffect = "additive",
                                              hessian = TRUE)
                     hessian = model[[1]]
@@ -259,7 +259,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
                     data = cbind(y,xg)
                     ng = dim(as.matrix(xg))[2]
-                    model = epscomploglikmax(data, ng, hwe = TRUE,
+                    model = epsfullloglikmax(data, ng, hwe = TRUE,
                                              geneffect = "additive",
                                              hessian = TRUE)
                     params = model[[2]]
@@ -298,7 +298,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     # 1.1.2.1: MAF given
                     ###########################################################
                     message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequencies: ", toString(maf),sep = ""))
-                    model = epscomploglikmax(data,ng, hwe = TRUE, maf = maf,
+                    model = epsfullloglikmax(data,ng, hwe = TRUE, maf = maf,
                                              geneffect = "additive",
                                              hessian = TRUE)
                     params = model[[2]]
@@ -325,7 +325,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     # 1.1.2.2: MAF not given
                     ###########################################################
                     message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
-                    model = epscomploglikmax(data, ng, hwe = TRUE,
+                    model = epsfullloglikmax(data, ng, hwe = TRUE,
                                              geneffect = "additive",
                                              hessian = TRUE)
                     params = model[[2]]
@@ -369,7 +369,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 # 1.2.1: MAF given
                 ###########################################################
                 message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
-                model = epscomploglikmaxint(data, ng, interactind,
+                model = epsfullloglikmaxint(data, ng, interactind,
                                             hwe = TRUE, maf = maf,
                                             geneffect = "additive",
                                             hessian = TRUE)
@@ -396,7 +396,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 # 1.2.1: MAF not given
                 ###########################################################
                 message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
-                model = epscomploglikmaxint(data, ng, interactind,
+                model = epsfullloglikmaxint(data, ng, interactind,
                                             hwe = TRUE,
                                             geneffect = "additive",
                                             hessian = TRUE)
@@ -435,7 +435,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 ###############################################################
                 data = cbind(y,xg)
                 ng = dim(as.matrix(xg))[2]
-                model = epscomploglikmax(data, ng, gfreq = gfreq,
+                model = epsfullloglikmax(data, ng, gfreq = gfreq,
                                          geneffect = geneffect,
                                          hessian = TRUE)
                 params = model[[2]]
@@ -470,7 +470,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     # 2.1.1: No confounders
                     ###########################################################
-                    model = epscomploglikmax(data, ng,
+                    model = epsfullloglikmax(data, ng,
                                              gfreq = gfreq,
                                              geneffect = "additive",
                                              hessian = TRUE)
@@ -499,7 +499,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                     #########################################################
                     # 2.1.1: Confounders
                     #########################################################
-                    model = epscomploglikmaxcond(data, ng,cind = cind,
+                    model = epsfullloglikmaxcond(data, ng,cind = cind,
                                                  hessian = TRUE)
                     params = model[[2]]
                     nparam = 1 + ne + ng
@@ -542,7 +542,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 ###############################################################
                 # 2.1.1: No confounders
                 ###############################################################
-                model = epscomploglikmaxint(data, ng, interactind = interactind,
+                model = epsfullloglikmaxint(data, ng, interactind = interactind,
                                             geneffect = geneffect, hessian = TRUE)
                 params = model[[2]]
                 nparam = 1 + ne + ng + length(interactind)
@@ -568,7 +568,7 @@ epscomp.lm = function(formula, hwe = FALSE, maf, gfreq,
                 ###############################################################
                 # 2.1.1: Confounders
                 ###############################################################
-                model = epscomploglikmaxcondint(data, ng,
+                model = epsfullloglikmaxcondint(data, ng,
                                                 cind = cind,
                                                 interactind = interactind,
                                                 hessian = TRUE)

@@ -1,7 +1,7 @@
-#' @title Test for associations under the EPS-complete design
+#' @title Test for associations under the EPS-full design
 #' @description
-#' \code{epscomp.test} performs a score test for genetic variables in
-#' the EPS-complete design
+#' \code{epsfull.test} performs a score test for genetic variables in
+#' the EPS-full design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis, see details
 #' @param SNP a matrix of variables to be tested against the null
@@ -11,7 +11,7 @@
 #' assumed dependent on other (non-genetic) covariates,
 #' default set to \code{FALSE}
 #' @param cx optional vector of names of confounding (non-genetic) covariates
-#' @return \code{epscomp.test} returns
+#' @return \code{epsfull.test} returns
 #' \item{statistic}{the value of the score test statistic}
 #' \item{parameter}{the degrees of freedom of the statistic}
 #' \item{p.value}{the P-value for the test}
@@ -29,7 +29,7 @@
 #' The covariate \code{xg} is a SNP (single-nucleotide polymorphism).
 #' Both xe and xg can be matrices.
 #'
-#' The EPS-complete design is such that the SNP genotype is only observed
+#' The EPS-full design is such that the SNP genotype is only observed
 #' for individuals with high and low values of the phenotype \code{y}.
 #' For remaining individuals, the unobserved genotype most be coded as NA.
 #' A SNP is assumed to have possible genotype 0, 1 or 2 according to the
@@ -54,16 +54,16 @@
 #' u = quantile(y,probs = 3/4,na.rm=TRUE)
 #' l = quantile(y,probs = 1/4,na.rm=TRUE)
 #' extreme = (y < l) | (y >= u)
-#' # Create the EPS-complete data set by setting
+#' # Create the EPS-full data set by setting
 #' # the SNP values of non-extremes to NA
 #' xg1[!extreme] = NA
 #' xg2[!extreme] = NA
 #' xg = as.matrix(cbind(xg1,xg2))
 #' xe = as.matrix(cbind(xe1,xe2))
-#' epscomp.test(y~xe1+xe2,SNP = xg)$p.value
-#' epscomp.test(y~xe,SNP = xg,onebyone=FALSE)$p.value
+#' epsfull.test(y~xe1+xe2,SNP = xg)$p.value
+#' epsfull.test(y~xe,SNP = xg,onebyone=FALSE)$p.value
 
-epscomp.test = function(nullmodel, SNP, onebyone = TRUE,
+epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
                         confounder = FALSE, cx){
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
