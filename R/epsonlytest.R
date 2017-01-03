@@ -280,7 +280,7 @@ epsonly.test = function(nullmodel,SNP,cutoffs,onebyone = TRUE){
             t = s%*%ginv(Sigma)%*%t(s)
             pvalue[1,1] = pchisq(t,ng,lower.tail=FALSE)
             statistic[1,1] = t
-            parameter[1,1]
+            parameter[1,1] = ng
             result = list(statistic,parameter,pvalue)
             names(result) = c("statistic","parameter","p.value")
             return(result)
