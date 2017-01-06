@@ -6,7 +6,8 @@ for genotyping based on extreme phenotype values.
 
 Install package:
 ```{r,eval=FALSE,warning=FALSE,message=FALSE}
-devtools::install_github("theabjorn/extremesampling")
+library(devtools)
+install_github("theabjorn/extremesampling")
 ```
 
 Tutorial and examples of usage https://github.com/theabjorn/extremesampling/blob/master/vignettes/vignette.Rmd
