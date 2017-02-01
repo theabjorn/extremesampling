@@ -90,7 +90,10 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
         xe = covariates0
         # Confounders
         if(confounder){
-            if(missing(cx)){cx = colnames(covariates0)}
+            if(missing(cx)){cx = colnames(covariates0)
+            }else if(is.na(match(cx,colnames(covariates0)))){
+                stop("The name of the confounder given is not the name of a covariate.")
+            }
             message(paste("Confounders: ", toString(cx),sep=""))
             cind = match(cx,colnames(covariates0))
             xecind = as.matrix(covariates0[,cind])

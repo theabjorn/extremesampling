@@ -174,7 +174,10 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
 
     if(confounder & isxe){
         if(hwe){stop("Confounders and Hardy-Weinberg equilibrium not allowed simultaneously")}
-        if(missing(cx)){cx = colnames(covariates)[xid]}
+        if(missing(cx)){cx = colnames(covariates)[xid]
+        }else if(is.na(match(cx,colnames(covariates)))){
+            stop("The name of the confounder given is not the name of a covariate.")
+        }
         message(paste("Confounders: ", toString(cx),sep=""))
         cind = match(match(cx,colnames(covariates)),xid)
         xecind = as.matrix(covariates[,cind])
