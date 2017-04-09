@@ -207,7 +207,7 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
             # confounding
             ux = as.matrix(unique(x_cc[,cind]))
             nu = dim(ux)[1]
-            if(nu != dim(as.matrix(unique(x[,cind])))){
+            if(nu != dim(as.matrix(unique(xe[,cind])))){
                 warning("All unique levels of confounder not found in extreme sample")
             }
             uindex = list()
