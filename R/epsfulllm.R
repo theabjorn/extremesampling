@@ -86,8 +86,14 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
 
     options(na.action="na.pass")
         epsdata = model.frame(formula)
-        covariates = model.matrix(formula)[,-1]
+        covariates = as.matrix(model.matrix(formula)[,-1])
     options(na.action="na.omit")
+
+    if(dim(covariates)[2]==1){
+        covnames = colnames(epsdata)[2]
+        }else{
+        covnames = colnames(covariates)
+    }
 
     n = dim(epsdata)[1]
     y = epsdata[,1]
@@ -103,7 +109,7 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
 
     modelnames = attr(terms(formula), "term.labels")
     covariateorder = attr(terms(formula), "order")
-    covnames = colnames(covariates)
+
     nint = sum(covariateorder>1)
     if(nint > 0){
         covintnames = modelnames[covariateorder > 1]

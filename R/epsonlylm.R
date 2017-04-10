@@ -67,9 +67,15 @@ epsonly.lm = function(formula,cutoffs){
 
     options(na.action="na.pass")
         epsdata = model.frame(formula)
-        covariates = model.matrix(formula)[,-1]
+        covariates = as.matrix(model.matrix(formula)[,-1])
     options(na.action="na.omit")
     if(sum(is.na(epsdata)) > 1){stop("NA values in the data not allowed")}
+
+    if(dim(covariates)[2]==1){
+        covnames = colnames(epsdata)[2]
+    }else{
+        covnames = colnames(covariates)
+    }
 
     n = dim(epsdata)[1]
     y = epsdata[,1]
@@ -94,8 +100,8 @@ epsonly.lm = function(formula,cutoffs){
         ci[i,2] = params[i] + 1.96*(sqrt(info[i,i]))
     }
     colnames(ci) = c("lower 95% ci", "upper 95% ci")
-    names(coef) = c("(intercept)",colnames(covariates))
-    rownames(ci) = c("(intercept)",colnames(covariates))
+    names(coef) = c("(intercept)",covnames)
+    rownames(ci) = c("(intercept)",covnames)
 
     result = list(coef,ci,sigma)
     names(result) = c("coefficients","ci","sigma")
