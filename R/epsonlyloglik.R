@@ -21,3 +21,23 @@ epsonlyloglik = function(parameters,data,cutoffs){
     ll = sum(log(dnorm(z)/sigma)-log(1-pnorm(zu)+pnorm(zl)))
     return(ll)
 }
+
+epsonlyloglik_y = function(parameters,data,cutoffs){
+    param = parameters
+    l = min(cutoffs)
+    u = max(cutoffs)
+    len = dim(data)[2]
+
+    y = data[,1]
+    n = length(y)
+
+    lenp = length(param)
+    alpha = param[1]
+    tau = param[lenp]; sigma2 = exp(tau); sigma = sqrt(sigma2)
+
+    z = (y-alpha )/sigma
+    zl = (l-alpha )/sigma
+    zu = (u-alpha )/sigma
+    ll = sum(log(dnorm(z)/sigma)-log(1-pnorm(zu)+pnorm(zl)))
+    return(ll)
+}

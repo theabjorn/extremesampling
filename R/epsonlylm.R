@@ -71,39 +71,69 @@ epsonly.lm = function(formula,cutoffs){
     options(na.action="na.omit")
     if(sum(is.na(epsdata)) > 1){stop("NA values in the data not allowed")}
 
-    if(dim(covariates)[2]==1){
-        covnames = colnames(epsdata)[2]
+    if(dim(covariates)[2]>0){
+        if(dim(covariates)[2]==1){
+            covnames = colnames(epsdata)[2]
+        }else{
+            covnames = colnames(covariates)
+        }
+
+        n = dim(epsdata)[1]
+        y = epsdata[,1]
+
+        modeldata = cbind(epsdata[,1],covariates)
+
+        # Common variables in all methods, make covariates into matrices
+        l = min(cutoffs)
+        u = max(cutoffs)
+
+        model = epsonlyloglikmax(modeldata,cutoffs,hessian = TRUE)
+
+        hessian = model[[1]]
+        info = -1*ginv(hessian)
+        params = model[[2]]
+        sigma = params[length(params)]
+        coef = c()
+        ci = data.frame(matrix(NA,nrow = (length(params)-1), ncol = 2))
+        for(i in 1:(length(params)-1)){
+            coef[i] = params[i]
+            ci[i,1] = params[i] - 1.96*(sqrt(info[i,i]))
+            ci[i,2] = params[i] + 1.96*(sqrt(info[i,i]))
+        }
+        colnames(ci) = c("lower 95% ci", "upper 95% ci")
+        names(coef) = c("(intercept)",covnames)
+        rownames(ci) = c("(intercept)",covnames)
+
+        result = list(coef,ci,sigma)
+        names(result) = c("coefficients","ci","sigma")
+        return(result)
     }else{
-        covnames = colnames(covariates)
+        n = dim(epsdata)[1]
+        y = epsdata[,1]
+        modeldata = as.matrix(y)
+
+        l = min(cutoffs)
+        u = max(cutoffs)
+
+        model = epsonlyloglikmax(modeldata,cutoffs,hessian = TRUE)
+
+        hessian = model[[1]]
+        info = -1*ginv(hessian)
+        params = model[[2]]
+        sigma = params[length(params)]
+        coef = c()
+        ci = data.frame(matrix(NA,nrow = (length(params)-1), ncol = 2))
+        for(i in 1:(length(params)-1)){
+            coef[i] = params[i]
+            ci[i,1] = params[i] - 1.96*(sqrt(info[i,i]))
+            ci[i,2] = params[i] + 1.96*(sqrt(info[i,i]))
+        }
+        colnames(ci) = c("lower 95% ci", "upper 95% ci")
+        names(coef) = c("(intercept)")
+        rownames(ci) = c("(intercept)")
+
+        result = list(coef,ci,sigma)
+        names(result) = c("coefficients","ci","sigma")
+        return(result)
     }
-
-    n = dim(epsdata)[1]
-    y = epsdata[,1]
-
-    modeldata = cbind(epsdata[,1],covariates)
-
-    # Common variables in all methods, make covariates into matrices
-    l = min(cutoffs)
-    u = max(cutoffs)
-
-    model = epsonlyloglikmax(modeldata,cutoffs,hessian = TRUE)
-
-    hessian = model[[1]]
-    info = -1*ginv(hessian)
-    params = model[[2]]
-    sigma = params[length(params)]
-    coef = c()
-    ci = data.frame(matrix(NA,nrow = (length(params)-1), ncol = 2))
-    for(i in 1:(length(params)-1)){
-        coef[i] = params[i]
-        ci[i,1] = params[i] - 1.96*(sqrt(info[i,i]))
-        ci[i,2] = params[i] + 1.96*(sqrt(info[i,i]))
-    }
-    colnames(ci) = c("lower 95% ci", "upper 95% ci")
-    names(coef) = c("(intercept)",covnames)
-    rownames(ci) = c("(intercept)",covnames)
-
-    result = list(coef,ci,sigma)
-    names(result) = c("coefficients","ci","sigma")
-    return(result)
 }
