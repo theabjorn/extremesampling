@@ -88,6 +88,9 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
     if(dim(covariates0)[2]>0){
         isxe = TRUE
         xe = covariates0
+        if(dim(covariates0)[2] ==1){
+            colnames(covariates0) = colnames(epsdata0)[2]
+        }
         # Confounders
         if(confounder){
             if(missing(cx)){cx = colnames(covariates0)
