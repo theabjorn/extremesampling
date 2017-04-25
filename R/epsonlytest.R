@@ -456,8 +456,7 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
                 h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
                 h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
-                h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
-                    (1-pnorm(zu)+pnorm(zl))
+                h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/(1-pnorm(zu)+pnorm(zl))
 
                 a = 1 - h1 - h0*h0
                 b = h0 - h2 - h0*h1
@@ -476,10 +475,10 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                     gi_r = g_r[,i]
                     gi_e = g_e[,i]
 
-                    I22 = sum(gi_r*gi_r) + sum(gi_e*gi_e*a[,1])
+                    I22 = sum(gi_r*gi_r) + sum(gi_e*gi_e*a)
 
-                    I21_1 = sum(gi_r) + sum(a[,1]*gi_e)
-                    I21_3 = sum(gi_r) + sum(b[,1]*gi_e)
+                    I21_1 = sum(gi_r) + sum(a*gi_e)
+                    I21_3 = sum(gi_r) + sum(b*gi_e)
                     I21 = cbind(I21_1,I21_3)
                     I12 = t(I21)
 
