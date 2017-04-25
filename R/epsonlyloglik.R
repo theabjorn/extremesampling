@@ -28,7 +28,7 @@ epsonlyloglik_rand = function(parameters,data,cutoffs,randomindex){
     u = max(cutoffs)
     len = dim(data)[2]
 
-    y_e = data[,1][randomindex==0]
+    y_e = data[randomindex==0,1]
     x_e = as.matrix(data[randomindex==0,2:len])
     ne = length(y_e)
     y_r = data[,1][randomindex==1]

@@ -1,6 +1,6 @@
 # Maximize log-likelihood function for EPS-only data
 
-epsonlyloglikmax = function(data,cutoffs,ll= FALSE, hessian = FALSE,randomindex){
+epsonlyloglikmax = function(data,cutoffs,randomindex,ll=FALSE, hessian = FALSE){
 
     rsample = TRUE
     if(missing(randomindex)){

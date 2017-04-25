@@ -352,11 +352,11 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
         ne = length(y_e)
 
         totest = colnames(SNP)
-        g_r = as.matrix(SNP)[randomindex ==1,]
-        g_e = as.matrix(SNP)[randomindex ==0,]
+        g_r = as.matrix(as.matrix(SNP)[randomindex ==1,])
+        g_e = as.matrix(as.matrix(SNP)[randomindex ==0,])
         ng = dim(g_e)[2]
 
-        modeldata = cbind(epsdata0[,1],covariates0,randomindex)
+        modeldata = epsdata0
 
         isx = (dim(covariates0)[2]>0) # there are covariates in the null model
 
@@ -378,8 +378,8 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 ###############################################################
                 # Covariates present in the null model
                 ###############################################################
-                x_r = as.matrix(covariates0)[randomindex ==1,]
-                x_e = as.matrix(covariates0)[randomindex ==0,]
+                x_r = as.matrix(as.matrix(covariates0)[randomindex ==1,])
+                x_e = as.matrix(as.matrix(covariates0)[randomindex ==0,])
 
                 fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
                 alpha = fit[1]
@@ -430,7 +430,7 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                     I12 = t(I21)
 
                     Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-                    s = (sum((y_r - alpha - x_r%*%beta)*gi_r) + sum((y_e-alpha - xbeta +sigma*h0)*gi_r))/sigma2
+                    s = (sum((y_r - alpha - x_r%*%beta)*gi_r) + sum((y_e-alpha - xbeta +sigma*h0)*gi_e))/sigma2
                     t = s*s/Sigma
                     pval = pchisq(t,1,lower.tail=FALSE)
 
