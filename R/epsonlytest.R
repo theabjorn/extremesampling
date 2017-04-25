@@ -456,17 +456,18 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
                 h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
                 h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
-                h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+                h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
+                    (1-pnorm(zu)+pnorm(zl))
 
                 a = 1 - h1 - h0*h0
                 b = h0 - h2 - h0*h1
                 c = 2 + 2*h1 - h3 - h1*h1
 
-                I11_11 = nr + sum(a)
+                I11_11 = nr + ne*a
 
-                I11_33 = 2*nr + sum(c)
-                I11_31 = sum(b)
-                I11_13 = sum(b)
+                I11_33 = 2*nr + ne*c
+                I11_31 = ne*b
+                I11_13 = ne*b
 
                 I11 = cbind(rbind(I11_11,I11_31),
                             rbind(I11_13,I11_33))
@@ -556,7 +557,7 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
 
                 I21_1 = t(t(colSums(g_r))) + t(t(a)%*%g_e)
                 I21_2 = t(t(x_r)%*%g_r) +  t(t(x_e)%*%(diag(a[,1])%*%g_e))
-                I21_3 = t(t(b)%*%g)
+                I21_3 = t(t(b)%*%g_e)
                 I21 = cbind(I21_1,I21_2,I21_3)
                 I12 = t(I21)
 
@@ -592,19 +593,19 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 b = h0 - h2 - h0*h1
                 c = 2 + 2*h1 - h3 - h1*h1
 
-                I11_11 = nr + sum(a)
+                I11_11 = nr + ne*a
 
-                I11_33 = 2*nr + sum(c)
-                I11_31 = sum(b)
-                I11_13 = sum(b)
+                I11_33 = 2*nr + ne*c
+                I11_31 = ne*b
+                I11_13 = ne*b
 
                 I11 = cbind(rbind(I11_11,I11_31),
                             rbind(I11_13,I11_33))
 
-                I22 = t(g_r)%*%g_r +  t(g_e)%*%(diag(a[,1])%*%g_e)
+                I22 = t(g_r)%*%g_r +  a*t(g_e)%*%g_e
 
-                I21_1 = t(t(colSums(g_r))) + t(t(a)%*%g_e)
-                I21_3 = t(t(b)%*%g)
+                I21_1 = t(t(colSums(g_r))) + a*t(t(colSums(g_e)))
+                I21_3 = b*t(t(colSums(g_e)))
                 I21 = cbind(I21_1,I21_3)
                 I12 = t(I21)
 
