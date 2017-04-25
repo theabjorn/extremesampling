@@ -22,6 +22,34 @@ epsonlyloglik = function(parameters,data,cutoffs){
     return(ll)
 }
 
+epsonlyloglik_rand = function(parameters,data,cutoffs,randomindex){
+    param = parameters
+    l = min(cutoffs)
+    u = max(cutoffs)
+    len = dim(data)[2]
+
+    y_e = data[,1][randomindex==0]
+    x_e = as.matrix(data[randomindex==0,2:len])
+    ne = length(y_e)
+    y_r = data[,1][randomindex==1]
+    x_r = as.matrix(data[randomindex==1,2:len])
+    nr = length(y_r)
+
+    lenp = length(param)
+    alpha = param[1]
+    beta = param[2:(lenp-1)]
+    tau = param[lenp]; sigma2 = exp(tau); sigma = sqrt(sigma2)
+
+    z = (y_e-alpha - x_e%*%beta)/sigma
+    zl = (l-alpha - x_e%*%beta)/sigma
+    zu = (u-alpha - x_e%*%beta)/sigma
+
+    z_r = (y_r-alpha - x_r%*%beta)/sigma
+
+    ll = sum(log(dnorm(z_r)/sigma)) + sum(log(dnorm(z)/sigma)-log(1-pnorm(zu)+pnorm(zl)))
+    return(ll)
+}
+
 epsonlyloglik_y = function(parameters,data,cutoffs){
     param = parameters
     l = min(cutoffs)
@@ -39,5 +67,29 @@ epsonlyloglik_y = function(parameters,data,cutoffs){
     zl = (l-alpha )/sigma
     zu = (u-alpha )/sigma
     ll = sum(log(dnorm(z)/sigma)-log(1-pnorm(zu)+pnorm(zl)))
+    return(ll)
+}
+
+epsonlyloglik_y_rand = function(parameters,data,cutoffs,randomindex){
+    param = parameters
+    l = min(cutoffs)
+    u = max(cutoffs)
+
+    y_e = data[,1][randomindex==0]
+    ne = length(y_e)
+    y_r = data[,1][randomindex==1]
+    nr = length(y_r)
+
+    lenp = length(param)
+    alpha = param[1]
+    tau = param[lenp]; sigma2 = exp(tau); sigma = sqrt(sigma2)
+
+    z = (y_e-alpha)/sigma
+    zl = (l-alpha)/sigma
+    zu = (u-alpha)/sigma
+
+    z_r = (y_r-alpha)/sigma
+
+    ll = sum(log(dnorm(z_r)/sigma)) + sum(log(dnorm(z)/sigma)-log(1-pnorm(zu)+pnorm(zl)))
     return(ll)
 }

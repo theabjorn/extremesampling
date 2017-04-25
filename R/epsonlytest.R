@@ -7,6 +7,8 @@
 #' @param SNP a matrix of variables to be tested against the null
 #' @param cutoffs a vector \code{c(l,u)} of the lower and upper cut-offs used
 #' for extreme sampling
+#' @param randomindex a vector which indicates if observations are from a random
+#' or extreme sample
 #' @param onebyone \code{TRUE} if genetic variables should be tested one by one
 #' for inclusion in the model, default \code{TRUE}
 #' @return \code{epsonly.test} returns
@@ -64,257 +66,559 @@
 #' epsonly.test(y~xe,SNP=xg,cutoffs = c(l,u))
 #' epsonly.test(y~xe,SNP=xg,cutoffs = c(l,u),onebyone = FALSE)
 
-epsonly.test = function(nullmodel,SNP,cutoffs,onebyone = TRUE){
+epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
 
     if(length(cutoffs) != 2){stop("Invalid cutoffs vector given")}
+
+    rsample = TRUE
+    if(missing(randomindex)){
+        rsample = FALSE
+    }else if(sum(randomindex)==0){
+        rsample = FALSE
+    }
+
     if(is.null(colnames(SNP))){
         SNP = as.matrix(SNP)
         colnames(SNP) = paste0("SNP",1:dim(SNP)[2])}
 
     options(na.action="na.pass")
-        epsdata0 = model.frame(nullmodel)
-        covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
+    epsdata0 = model.frame(nullmodel)
+    covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
     options(na.action="na.omit")
-
-    y = epsdata0[,1]
-    n = length(y)
 
     if(sum(is.na(epsdata0) > 1)){
         stop("NA values in the data not allowed")}
 
-    totest = colnames(SNP)
-    g = as.matrix(SNP)
-
-    modeldata = cbind(epsdata0[,1],covariates0)
     l = min(cutoffs)
     u = max(cutoffs)
 
-    isx = (dim(covariates0)[2]>0) # there are covariates in the null model
-
-    ng = dim(g)[2]
-    n = dim(epsdata0)[1]
-    y = epsdata0[,1]
-
-    if(onebyone){
+    if(!rsample){
         ###################################################################
-        # Test genetic covariates one by one (GWAS)
+        # No random sample, extreme-phenotype individuals only
         ###################################################################
-        statistic = matrix(NA,ncol = 1, nrow = ng)
-        parameter = matrix(NA,ncol = 1, nrow = ng)
-        pvalue = matrix(NA,ncol = 1, nrow = ng)
-        rownames(statistic) = totest
-        rownames(parameter) = totest
-        rownames(pvalue) = totest
-        colnames(statistic) = "t"
-        colnames(parameter) = "d.o.f"
-        colnames(pvalue) = "p.value"
+        message("EPS complete-case analysis with no random samples")
 
-        if(isx){
-            ###############################################################
-            # Covariates present in the null model
-            ###############################################################
-            x = as.matrix(covariates0)
+        y = epsdata0[,1]
+        n = length(y)
 
-            fit = epsonlyloglikmax(modeldata,c(l,u)) # Fit under H0
-            alpha = fit[1]
-            beta = fit[2:(length(fit)-1)]
-            sigma = fit[length(fit)]
-            sigma2 = sigma*sigma
-            xbeta = x%*%beta
-            zl = (l-alpha-xbeta)/sigma
-            zu = (u-alpha-xbeta)/sigma
+        if(sum(is.na(epsdata0) > 1)){
+            stop("NA values in the data not allowed")}
 
-            h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
-            h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
-            h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
-            h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
-                (1-pnorm(zu)+pnorm(zl))
+        totest = colnames(SNP)
+        g = as.matrix(SNP)
 
-            a = 1 - h1 - h0*h0
-            b = h0 - h2 - h0*h1
-            c = 2 + 2*h1 - h3 - h1*h1
+        modeldata = cbind(epsdata0[,1],covariates0)
 
-            I11_11 = sum(a)
-            I11_22 = t(x)%*%(diag(a[,1])%*%x)
+        isx = (dim(covariates0)[2]>0) # there are covariates in the null model
 
-            I11_21 = t(t(a)%*%x)
-            I11_12 = t(a)%*%x
+        ng = dim(g)[2]
+        n = dim(epsdata0)[1]
+        y = epsdata0[,1]
 
-            I11_33 = sum(c)
-            I11_31 = sum(b)
-            I11_13 = sum(b)
-            I11_23 = t(t(b)%*%x)
-            I11_32 = t(b)%*%x
+        if(onebyone){
+            ###################################################################
+            # Test genetic covariates one by one (GWAS)
+            ###################################################################
+            statistic = matrix(NA,ncol = 1, nrow = ng)
+            parameter = matrix(NA,ncol = 1, nrow = ng)
+            pvalue = matrix(NA,ncol = 1, nrow = ng)
+            rownames(statistic) = totest
+            rownames(parameter) = totest
+            rownames(pvalue) = totest
+            colnames(statistic) = "t"
+            colnames(parameter) = "d.o.f"
+            colnames(pvalue) = "p.value"
 
-            I11 = cbind(rbind(I11_11,I11_21,I11_31),
-                        rbind(I11_12,I11_22,I11_32),
-                        rbind(I11_13,I11_23,I11_33))
+            if(isx){
+                ###############################################################
+                # Covariates present in the null model
+                ###############################################################
+                x = as.matrix(covariates0)
 
-            for(i in 1:ng){
-                gi = g[,i]
-                I22 = sum(gi*gi*a[,1])
+                fit = epsonlyloglikmax(modeldata,c(l,u)) # Fit under H0
+                alpha = fit[1]
+                beta = fit[2:(length(fit)-1)]
+                sigma = fit[length(fit)]
+                sigma2 = sigma*sigma
+                xbeta = x%*%beta
+                zl = (l-alpha-xbeta)/sigma
+                zu = (u-alpha-xbeta)/sigma
 
-                I21_1 = sum(a[,1]*gi)
-                I21_2 = t(t(x)%*%(a[,1]*gi))
-                I21_3 = sum(b[,1]*gi)
+                h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
+                h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+                h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+                h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
+                    (1-pnorm(zu)+pnorm(zl))
+
+                a = 1 - h1 - h0*h0
+                b = h0 - h2 - h0*h1
+                c = 2 + 2*h1 - h3 - h1*h1
+
+                I11_11 = sum(a)
+                I11_22 = t(x)%*%(diag(a[,1])%*%x)
+
+                I11_21 = t(t(a)%*%x)
+                I11_12 = t(a)%*%x
+
+                I11_33 = sum(c)
+                I11_31 = sum(b)
+                I11_13 = sum(b)
+                I11_23 = t(t(b)%*%x)
+                I11_32 = t(b)%*%x
+
+                I11 = cbind(rbind(I11_11,I11_21,I11_31),
+                            rbind(I11_12,I11_22,I11_32),
+                            rbind(I11_13,I11_23,I11_33))
+
+                for(i in 1:ng){
+                    gi = g[,i]
+                    I22 = sum(gi*gi*a[,1])
+
+                    I21_1 = sum(a[,1]*gi)
+                    I21_2 = t(t(x)%*%(a[,1]*gi))
+                    I21_3 = sum(b[,1]*gi)
+                    I21 = cbind(I21_1,I21_2,I21_3)
+                    I12 = t(I21)
+
+                    Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+                    s = sum((y-alpha - xbeta +sigma*h0)*gi)/sigma2
+                    t = s*s/Sigma
+                    pval = pchisq(t,1,lower.tail=FALSE)
+
+                    statistic[i,] = t
+                    parameter[i,] = 1
+                    pvalue[i,] = pval
+                }
+                result = list(statistic,parameter,pvalue)
+                names(result) = c("statistic","parameter","p.value")
+                return(result)
+            }else{
+                ##############################################################
+                # No covariates present in the null model
+                ##############################################################
+
+                # score test for random sample
+
+                y = epsdata0[,1]
+
+                alpha = mean(y) # fit under H0
+                sigma = sd(y)
+                sigma2 = sigma*sigma
+
+                I11_11 = n
+                I11_33 = 2*n
+
+                I11_31 = 0
+                I11_13 = 0
+                I11 = cbind(rbind(I11_11,I11_31),
+                            rbind(I11_13,I11_33))
+
+                for(i in 1:ng){
+                    gi = g[,i]
+                    I22 = t(gi)%*%gi
+                    I21_1 = sum(gi)
+                    I21_3 = 0
+                    I21 = cbind(I21_1,I21_3)
+                    Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+                    s = (1/sigma2)*sum((y-alpha)*gi)
+                    t = s*s/Sigma
+                    pval = pchisq(t,1,lower.tail=FALSE)
+
+                    statistic[i,] = t
+                    parameter[i,] = 1
+                    pvalue[i,] = pval
+                }
+                result = list(statistic,parameter,pvalue)
+                names(result) = c("statistic","parameter","p.value")
+                return(result)
+            }
+        }else{
+            ###################################################################
+            # Test all genetic covariates at a time (canditate SNP)
+            ###################################################################
+            if(ng > 10){
+                stop("Do not test more than 10 SNPs simultaneously,
+                     choose onebyone = TRUE")
+            }
+            statistic = matrix(NA,ncol = 1, nrow = 1)
+            parameter = matrix(NA,ncol = 1, nrow = 1)
+            pvalue = matrix(NA,ncol = 1, nrow = 1)
+            colnames(statistic) = "t"
+            colnames(parameter) = "d.o.f"
+            colnames(pvalue) = "p.value"
+            if(isx){
+                ###############################################################
+                # Covariates present in the null model
+                ###############################################################
+                x = covariates0
+
+                fit = epsonlyloglikmax(modeldata,c(l,u))
+                alpha = fit[1]
+                beta = fit[2:(length(fit)-1)]
+                sigma = fit[length(fit)]
+                sigma2 = sigma*sigma
+
+                xbeta = x%*%beta
+                zl = (l-alpha-xbeta)/sigma
+                zu = (u-alpha-xbeta)/sigma
+
+                h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
+                h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+                h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+                h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
+                    (1-pnorm(zu)+pnorm(zl))
+
+                a = 1 - h1 - h0*h0
+                b = h0 - h2 - h0*h1
+                c = 2 + 2*h1 - h3 - h1*h1
+
+                I11_11 = sum(a)
+                I11_22 = t(x)%*%(diag(a[,1])%*%x)
+
+                I11_21 = t(t(a)%*%x)
+                I11_12 = t(a)%*%x
+
+                I11_33 = sum(c)
+                I11_31 = sum(b)
+                I11_13 = sum(b)
+                I11_23 = t(t(b)%*%x)
+                I11_32 = t(b)%*%x
+
+                I11 = cbind(rbind(I11_11,I11_21,I11_31),
+                            rbind(I11_12,I11_22,I11_32),
+                            rbind(I11_13,I11_23,I11_33))
+
+                I22 = t(g)%*%(diag(a[,1])%*%g)
+
+                I21_1 = t(t(a)%*%g)
+                I21_2 = t(t(x)%*%(diag(a[,1])%*%g))
+                I21_3 = t(t(b)%*%g)
                 I21 = cbind(I21_1,I21_2,I21_3)
                 I12 = t(I21)
 
                 Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-                s = sum((y-alpha - xbeta +sigma*h0)*gi)/sigma2
-                t = s*s/Sigma
-                pval = pchisq(t,1,lower.tail=FALSE)
+                s = t(y-alpha - xbeta +sigma*h0)%*%g/sigma2
+                t = s%*%ginv(Sigma)%*%t(s)
+                pvalue[1,1] = pchisq(t,ng,lower.tail=FALSE)
+                statistic[1,1] = t
+                parameter[1,1] = ng
+                result = list(statistic,parameter,pvalue)
+                names(result) = c("statistic","parameter","p.value")
+                return(result)
+            }else{
+                ###############################################################
+                # No covariates present in the null model
+                ###############################################################
+                y = epsdata0[,1]
 
-                statistic[i,] = t
-                parameter[i,] = 1
-                pvalue[i,] = pval
-            }
-            result = list(statistic,parameter,pvalue)
-            names(result) = c("statistic","parameter","p.value")
-            return(result)
-        }else{
-            ##############################################################
-            # No covariates present in the null model
-            ##############################################################
-            y = epsdata0[,1]
+                alpha = mean(y)
+                sigma = sd(y)
+                sigma2 = sigma*sigma
 
-            alpha = mean(y) # fit under H0
-            sigma = sd(y)
-            sigma2 = sigma*sigma
+                I11_11 = n
+                I11_33 = 2*n
+                I11_31 = 0
+                I11_13 = 0
+                I11 = cbind(rbind(I11_11,I11_31),
+                            rbind(I11_13,I11_33))
+                I22 = t(g)%*%(g)
 
-            I11_11 = n
-            I11_33 = 2*n
-
-            I11_31 = 0
-            I11_13 = 0
-            I11 = cbind(rbind(I11_11,I11_31),
-                        rbind(I11_13,I11_33))
-
-            for(i in 1:ng){
-                gi = g[,i]
-                I22 = t(gi)%*%gi
-                I21_1 = sum(gi)
-                I21_3 = 0
+                I21_1 = matrix(colSums(g))
+                I21_3 = matrix(0,nrow=ng,ncol=1)
                 I21 = cbind(I21_1,I21_3)
-                Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-                s = (1/sigma2)*sum((y-alpha)*gi)
-                t = s*s/Sigma
-                pval = pchisq(t,1,lower.tail=FALSE)
 
-                statistic[i,] = t
-                parameter[i,] = 1
-                pvalue[i,] = pval
+                Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+                s = t(y-alpha)%*%g/sigma2
+                t = s%*%ginv(Sigma)%*%t(s)
+                pvalue[1,1] = pchisq(t,ng,lower.tail=FALSE)
+                statistic[1,1] = t
+                parameter[1,1] = ng
+                result = list(statistic,parameter,pvalue)
+                names(result) = c("statistic","parameter","p.value")
+                return(result)
             }
-            result = list(statistic,parameter,pvalue)
-            names(result) = c("statistic","parameter","p.value")
-            return(result)
         }
     }else{
         ###################################################################
-        # Test all genetic covariates at a time (canditate SNP)
+        # Extremes + random sample
         ###################################################################
-        if(ng > 10){
-            stop("Do not test more than 10 SNPs simultaneously,
-                     choose onebyone = TRUE")
-        }
-        statistic = matrix(NA,ncol = 1, nrow = 1)
-        parameter = matrix(NA,ncol = 1, nrow = 1)
-        pvalue = matrix(NA,ncol = 1, nrow = 1)
-        colnames(statistic) = "t"
-        colnames(parameter) = "d.o.f"
-        colnames(pvalue) = "p.value"
-        if(isx){
-            ###############################################################
-            # Covariates present in the null model
-            ###############################################################
-            x = covariates0
+        message("EPS complete-case analysis with random samples")
 
-            fit = epsonlyloglikmax(modeldata,c(l,u))
-            alpha = fit[1]
-            beta = fit[2:(length(fit)-1)]
-            sigma = fit[length(fit)]
-            sigma2 = sigma*sigma
+        y_r = epsdata0[,1][randomindex ==1]
+        y_e = epsdata0[,1][randomindex ==0]
+        nr = length(y_r)
+        ne = length(y_e)
 
-            xbeta = x%*%beta
-            zl = (l-alpha-xbeta)/sigma
-            zu = (u-alpha-xbeta)/sigma
+        totest = colnames(SNP)
+        g_r = as.matrix(SNP)[randomindex ==1,]
+        g_e = as.matrix(SNP)[randomindex ==0,]
+        ng = dim(g_e)[2]
 
-            h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
-            h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
-            h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
-            h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
-                (1-pnorm(zu)+pnorm(zl))
+        modeldata = cbind(epsdata0[,1],covariates0,randomindex)
 
-            a = 1 - h1 - h0*h0
-            b = h0 - h2 - h0*h1
-            c = 2 + 2*h1 - h3 - h1*h1
+        isx = (dim(covariates0)[2]>0) # there are covariates in the null model
 
-            I11_11 = sum(a)
-            I11_22 = t(x)%*%(diag(a[,1])%*%x)
+        if(onebyone){
+            ###################################################################
+            # Test genetic covariates one by one (GWAS)
+            ###################################################################
+            statistic = matrix(NA,ncol = 1, nrow = ng)
+            parameter = matrix(NA,ncol = 1, nrow = ng)
+            pvalue = matrix(NA,ncol = 1, nrow = ng)
+            rownames(statistic) = totest
+            rownames(parameter) = totest
+            rownames(pvalue) = totest
+            colnames(statistic) = "t"
+            colnames(parameter) = "d.o.f"
+            colnames(pvalue) = "p.value"
 
-            I11_21 = t(t(a)%*%x)
-            I11_12 = t(a)%*%x
+            if(isx){
+                ###############################################################
+                # Covariates present in the null model
+                ###############################################################
+                x_r = as.matrix(covariates0)[randomindex ==1,]
+                x_e = as.matrix(covariates0)[randomindex ==0,]
 
-            I11_33 = sum(c)
-            I11_31 = sum(b)
-            I11_13 = sum(b)
-            I11_23 = t(t(b)%*%x)
-            I11_32 = t(b)%*%x
+                fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
+                alpha = fit[1]
+                beta = fit[2:(length(fit)-1)]
+                sigma = fit[length(fit)]
+                sigma2 = sigma*sigma
 
-            I11 = cbind(rbind(I11_11,I11_21,I11_31),
-                        rbind(I11_12,I11_22,I11_32),
-                        rbind(I11_13,I11_23,I11_33))
+                xbeta = x_e%*%beta
+                zl = (l-alpha-xbeta)/sigma
+                zu = (u-alpha-xbeta)/sigma
 
-            I22 = t(g)%*%(diag(a[,1])%*%g)
+                h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
+                h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+                h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+                h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
+                    (1-pnorm(zu)+pnorm(zl))
 
-            I21_1 = t(t(a)%*%g)
-            I21_2 = t(t(x)%*%(diag(a[,1])%*%g))
-            I21_3 = t(t(b)%*%g)
-            I21 = cbind(I21_1,I21_2,I21_3)
-            I12 = t(I21)
+                a = 1 - h1 - h0*h0
+                b = h0 - h2 - h0*h1
+                c = 2 + 2*h1 - h3 - h1*h1
 
-            Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-            s = t(y-alpha - xbeta +sigma*h0)%*%g/sigma2
-            t = s%*%ginv(Sigma)%*%t(s)
-            pvalue[1,1] = pchisq(t,ng,lower.tail=FALSE)
-            statistic[1,1] = t
-            parameter[1,1] = ng
-            result = list(statistic,parameter,pvalue)
-            names(result) = c("statistic","parameter","p.value")
-            return(result)
+                I11_11 = nr + sum(a)
+                I11_22 = t(x_r)%*%x_r + t(x_e)%*%(diag(a[,1])%*%x_e)
+
+                I11_21 = t(t(colSums(x_r))) + t(t(a)%*%x_e)
+                I11_12 = t(I11_21)
+
+                I11_33 = 2*nr + sum(c)
+                I11_31 = sum(b)
+                I11_13 = sum(b)
+                I11_23 = t(t(b)%*%x_e)
+                I11_32 = t(b)%*%x_e
+
+                I11 = cbind(rbind(I11_11,I11_21,I11_31),
+                            rbind(I11_12,I11_22,I11_32),
+                            rbind(I11_13,I11_23,I11_33))
+
+                for(i in 1:ng){
+                    gi_r = g_r[,i]
+                    gi_e = g_e[,i]
+
+                    I22 = sum(gi_r*gi_r) + sum(gi_e*gi_e*a[,1])
+
+                    I21_1 = sum(gi_r) + sum(a[,1]*gi_e)
+                    I21_2 = t(t(x_r)%*%(gi_r)) + t(t(x_e)%*%(a[,1]*gi_e))
+                    I21_3 = sum(gi_r) + sum(b[,1]*gi_e)
+                    I21 = cbind(I21_1,I21_2,I21_3)
+                    I12 = t(I21)
+
+                    Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+                    s = (sum((y_r - alpha - x_r%*%beta)*gi_r) + sum((y_e-alpha - xbeta +sigma*h0)*gi_r))/sigma2
+                    t = s*s/Sigma
+                    pval = pchisq(t,1,lower.tail=FALSE)
+
+                    statistic[i,] = t
+                    parameter[i,] = 1
+                    pvalue[i,] = pval
+                }
+                result = list(statistic,parameter,pvalue)
+                names(result) = c("statistic","parameter","p.value")
+                return(result)
+            }else{
+                ##############################################################
+                # No covariates present in the null model
+                ##############################################################
+                fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
+                alpha = fit[1]
+                sigma = fit[length(fit)]
+                sigma2 = sigma*sigma
+
+                zl = (l-alpha)/sigma
+                zu = (u-alpha)/sigma
+
+                h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
+                h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+                h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+                h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
+                    (1-pnorm(zu)+pnorm(zl))
+
+                a = 1 - h1 - h0*h0
+                b = h0 - h2 - h0*h1
+                c = 2 + 2*h1 - h3 - h1*h1
+
+                I11_11 = nr + sum(a)
+
+                I11_33 = 2*nr + sum(c)
+                I11_31 = sum(b)
+                I11_13 = sum(b)
+
+                I11 = cbind(rbind(I11_11,I11_31),
+                            rbind(I11_13,I11_33))
+
+                for(i in 1:ng){
+                    gi_r = g_r[,i]
+                    gi_e = g_e[,i]
+
+                    I22 = sum(gi_r*gi_r) + sum(gi_e*gi_e*a[,1])
+
+                    I21_1 = sum(gi_r) + sum(a[,1]*gi_e)
+                    I21_3 = sum(gi_r) + sum(b[,1]*gi_e)
+                    I21 = cbind(I21_1,I21_3)
+                    I12 = t(I21)
+
+                    Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+                    s = (sum((y_r - alpha)*gi_r) + sum((y_e-alpha +sigma*h0)*gi_e))/sigma2
+                    t = s*s/Sigma
+                    pval = pchisq(t,1,lower.tail=FALSE)
+
+                    statistic[i,] = t
+                    parameter[i,] = 1
+                    pvalue[i,] = pval
+                }
+                result = list(statistic,parameter,pvalue)
+                names(result) = c("statistic","parameter","p.value")
+                return(result)
+            }
         }else{
-            ###############################################################
-            # No covariates present in the null model
-            ###############################################################
-            y = epsdata0[,1]
+            ###################################################################
+            # Test all genetic covariates at a time (canditate SNP)
+            ###################################################################
+            if(ng > 10){
+                stop("Do not test more than 10 SNPs simultaneously,
+                     choose onebyone = TRUE")
+            }
+            statistic = matrix(NA,ncol = 1, nrow = 1)
+            parameter = matrix(NA,ncol = 1, nrow = 1)
+            pvalue = matrix(NA,ncol = 1, nrow = 1)
+            colnames(statistic) = "t"
+            colnames(parameter) = "d.o.f"
+            colnames(pvalue) = "p.value"
+            if(isx){
+                ###############################################################
+                # Covariates present in the null model
+                ###############################################################
+                x_r = as.matrix(covariates0)[randomindex ==1,]
+                x_e = as.matrix(covariates0)[randomindex ==0,]
 
-            alpha = mean(y)
-            sigma = sd(y)
-            sigma2 = sigma*sigma
+                fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
+                alpha = fit[1]
+                beta = fit[2:(length(fit)-1)]
+                sigma = fit[length(fit)]
+                sigma2 = sigma*sigma
 
-            I11_11 = n
-            I11_33 = 2*n
-            I11_31 = 0
-            I11_13 = 0
-            I11 = cbind(rbind(I11_11,I11_31),
-                        rbind(I11_13,I11_33))
-            I22 = t(g)%*%(g)
+                xbeta = x_e%*%beta
+                zl = (l-alpha-xbeta)/sigma
+                zu = (u-alpha-xbeta)/sigma
 
-            I21_1 = matrix(colSums(g))
-            I21_3 = matrix(0,nrow=ng,ncol=1)
-            I21 = cbind(I21_1,I21_3)
+                h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
+                h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+                h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+                h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
+                    (1-pnorm(zu)+pnorm(zl))
 
-            Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-            s = t(y-alpha)%*%g/sigma2
-            t = s%*%ginv(Sigma)%*%t(s)
-            pvalue[1,1] = pchisq(t,ng,lower.tail=FALSE)
-            statistic[1,1] = t
-            parameter[1,1] = ng
-            result = list(statistic,parameter,pvalue)
-            names(result) = c("statistic","parameter","p.value")
-            return(result)
+                a = 1 - h1 - h0*h0
+                b = h0 - h2 - h0*h1
+                c = 2 + 2*h1 - h3 - h1*h1
+
+                I11_11 = nr + sum(a)
+                I11_22 = t(x_r)%*%x_r + t(x_e)%*%(diag(a[,1])%*%x_e)
+
+                I11_21 = t(t(colSums(x_r))) + t(t(a)%*%x_e)
+                I11_12 = t(I11_21)
+
+                I11_33 = 2*nr + sum(c)
+                I11_31 = sum(b)
+                I11_13 = sum(b)
+                I11_23 = t(t(b)%*%x_e)
+                I11_32 = t(b)%*%x_e
+
+                I11 = cbind(rbind(I11_11,I11_21,I11_31),
+                            rbind(I11_12,I11_22,I11_32),
+                            rbind(I11_13,I11_23,I11_33))
+
+                I22 = t(g_r)%*%g_r +  t(g_e)%*%(diag(a[,1])%*%g_e)
+
+                I21_1 = t(t(colSums(g_r))) + t(t(a)%*%g_e)
+                I21_2 = t(t(x_r)%*%g_r) +  t(t(x_e)%*%(diag(a[,1])%*%g_e))
+                I21_3 = t(t(b)%*%g)
+                I21 = cbind(I21_1,I21_2,I21_3)
+                I12 = t(I21)
+
+                Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+                s = (t(y_r-alpha - x_r%*%beta)%*%g_r + t(y_e-alpha - xbeta +sigma*h0)%*%g_e)/sigma2
+                t = s%*%ginv(Sigma)%*%t(s)
+                pvalue[1,1] = pchisq(t,ng,lower.tail=FALSE)
+                statistic[1,1] = t
+                parameter[1,1] = ng
+                result = list(statistic,parameter,pvalue)
+                names(result) = c("statistic","parameter","p.value")
+                return(result)
+            }else{
+                ###############################################################
+                # No covariates present in the null model
+                ###############################################################
+
+                fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
+                alpha = fit[1]
+                sigma = fit[length(fit)]
+                sigma2 = sigma*sigma
+
+                zl = (l-alpha)/sigma
+                zu = (u-alpha)/sigma
+
+                h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
+                h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+                h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+                h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
+                    (1-pnorm(zu)+pnorm(zl))
+
+                a = 1 - h1 - h0*h0
+                b = h0 - h2 - h0*h1
+                c = 2 + 2*h1 - h3 - h1*h1
+
+                I11_11 = nr + sum(a)
+
+                I11_33 = 2*nr + sum(c)
+                I11_31 = sum(b)
+                I11_13 = sum(b)
+
+                I11 = cbind(rbind(I11_11,I11_31),
+                            rbind(I11_13,I11_33))
+
+                I22 = t(g_r)%*%g_r +  t(g_e)%*%(diag(a[,1])%*%g_e)
+
+                I21_1 = t(t(colSums(g_r))) + t(t(a)%*%g_e)
+                I21_3 = t(t(b)%*%g)
+                I21 = cbind(I21_1,I21_3)
+                I12 = t(I21)
+
+                Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+                s = (t(y_r-alpha)%*%g_r + t(y_e-alpha +sigma*h0)%*%g_e)/sigma2
+                t = s%*%ginv(Sigma)%*%t(s)
+                pvalue[1,1] = pchisq(t,ng,lower.tail=FALSE)
+                statistic[1,1] = t
+                parameter[1,1] = ng
+                result = list(statistic,parameter,pvalue)
+                names(result) = c("statistic","parameter","p.value")
+                return(result)
+            }
         }
     }
 }
