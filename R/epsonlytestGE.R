@@ -4,10 +4,12 @@
 #' in the EPS-only design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis
-#' @param GE a list of interactions, with the colon-symbol used to denote
+#' @param GE a vector of interactions, with the colon-symbol used to denote
 #' interaction, e.g. \code{c("xe1:xg1","xe1:xg2")}
 #' @param cutoffs a vector \code{c(l,u)} of the lower and upper cut-offs used
 #' for extreme sampling
+#' @param randomindex a vector which indicates if observations are from a random
+#' or extreme sample
 #' @param onebyone \code{TRUE} if interactions should be tested one by one
 #' for inclusion in the model, default \code{TRUE}
 #' @return \code{epsonly.testGE} returns
@@ -66,16 +68,23 @@
 #'
 #' epsonly.testGE(y~xe1+xe2+xg1+xg2, GE=c("xe1:xg1"), cutoffs=c(l,u))$p.value
 
-epsonly.testGE = function(nullmodel,GE,cutoffs,onebyone = TRUE){
+epsonly.testGE = function(nullmodel,GE,cutoffs,randomindex,onebyone = TRUE){
 
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
 
     if(length(cutoffs) != 2){stop("Invalid cutoffs vector given")}
 
+    rsample = TRUE
+    if(missing(randomindex)){
+        rsample = FALSE
+    }else if(sum(randomindex)==0){
+        rsample = FALSE
+    }
+
     options(na.action="na.pass")
-    epsdata0 = model.frame(nullmodel)
-    covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
+        epsdata0 = model.frame(nullmodel)
+        covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
     options(na.action="na.omit")
 
     if(sum(is.na(epsdata0) > 1)){
@@ -101,143 +110,334 @@ epsonly.testGE = function(nullmodel,GE,cutoffs,onebyone = TRUE){
     }
 
     y = epsdata0[,1]
+    x = as.matrix(covariates0)
 
-    if(onebyone){
+    if(!rsample){
         ###################################################################
-        # Test gene-environment interactions one by one
+        # No random sample, extreme-phenotype individuals only
         ###################################################################
+        if(onebyone){
+            ###################################################################
+            # Test gene-environment interactions one by one
+            ###################################################################
+            x = as.matrix(covariates0)
 
-        x = as.matrix(covariates0)
+            fit = epsonlyloglikmax(modeldata,c(l,u)) # Fit under H0
+            alpha = fit[1]
+            beta = fit[2:(length(fit)-1)]
+            sigma = fit[length(fit)]
+            sigma2 = sigma*sigma
 
-        fit = epsonlyloglikmax(modeldata,c(l,u)) # Fit under H0
-        alpha = fit[1]
-        beta = fit[2:(length(fit)-1)]
-        sigma = fit[length(fit)]
-        sigma2 = sigma*sigma
-        xbeta = x%*%beta
-        zl = (l-alpha-xbeta)/sigma
-        zu = (u-alpha-xbeta)/sigma
+            f = y - alpha - x%*%beta
 
-        h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
-        h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
-        h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
-        h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
-            (1-pnorm(zu)+pnorm(zl))
+            xbeta = x%*%beta
+            zl = (l-alpha-xbeta)/sigma
+            zu = (u-alpha-xbeta)/sigma
 
-        a = 1 - h1 - h0*h0
-        b = h0 - h2 - h0*h1
-        c = 2 + 2*h1 - h3 - h1*h1
+            h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
+            h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+            h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+            h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
+                (1-pnorm(zu)+pnorm(zl))
 
-        I11_11 = sum(a)
-        I11_22 = t(x)%*%(diag(a[,1])%*%x)
+            a = 1 - h1 - h0*h0
+            b = h0 - h2 - h0*h1
+            c = -1 + 2*h1 - h3 - h1*h1
+            d = 2 + 2*h1 - h3 - h1*h1
 
-        I11_21 = t(t(a)%*%x)
-        I11_12 = t(a)%*%x
+            I11_11 = sum(a)
+            I11_22 = t(x)%*%(diag(a[,1])%*%x)
 
-        I11_33 = sum(c)
-        I11_31 = sum(b)
-        I11_13 = sum(b)
-        I11_23 = t(t(b)%*%x)
-        I11_32 = t(b)%*%x
+            I11_21 = t(t(a)%*%x)
+            I11_12 = t(a)%*%x
 
-        I11 = cbind(rbind(I11_11,I11_21,I11_31),
-                    rbind(I11_12,I11_22,I11_32),
-                    rbind(I11_13,I11_23,I11_33))
+            I11_33 = 3*sum(f^2)/sigma2 + sum(c)
+            I11_31 = 2*sum(f)/sigma + sum(b)
+            I11_13 = 2*sum(f)/sigma + sum(b)
+            I11_23 = 2*t(t(f)%*%x)/sigma + t(t(b)%*%x)
+            I11_32 = t(I11_23)
 
-        statistic = matrix(NA,ncol = 1, nrow = nge)
-        parameter = matrix(NA,ncol = 1, nrow = nge)
-        pvalue = matrix(NA,ncol = 1, nrow = nge)
-        rownames(statistic) = GE
-        rownames(parameter) = GE
-        rownames(pvalue) = GE
+            I11 = cbind(rbind(I11_11,I11_21,I11_31),
+                        rbind(I11_12,I11_22,I11_32),
+                        rbind(I11_13,I11_23,I11_33))
 
-        colnames(statistic) = "t"
-        colnames(parameter) = "d.o.f"
-        colnames(pvalue) = "p.value"
+            statistic = matrix(NA,ncol = 1, nrow = nge)
+            parameter = matrix(NA,ncol = 1, nrow = nge)
+            pvalue = matrix(NA,ncol = 1, nrow = nge)
+            rownames(statistic) = GE
+            rownames(parameter) = GE
+            rownames(pvalue) = GE
 
-        for(i in 1:nge){
-            gi = xge[,i]
-            I22 = t(gi)%*%(diag(a[,1])%*%gi)
+            colnames(statistic) = "t"
+            colnames(parameter) = "d.o.f"
+            colnames(pvalue) = "p.value"
 
-            I21_1 = t(t(a)%*%gi)
-            I21_2 = t(t(x)%*%(diag(a[,1])%*%gi))
-            I21_3 = t(b)%*%gi
+            for(i in 1:nge){
+                gi = xge[,i]
+                I22 = sum(gi*gi*a[,1])
+
+                I21_1 = sum(a[,1]*gi)
+                I21_2 = t(t(x)%*%(a[,1]*gi))
+                I21_3 = 2*sum(f*gi)/sigma + sum(b[,1]*gi)
+                I21 = cbind(I21_1,I21_2,I21_3)
+                I12 = t(I21)
+
+                Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+                s = (sum((y-alpha - xbeta +sigma*h0)*gi))/sigma2
+                t = s*s/Sigma
+                pval = pchisq(t,1,lower.tail=FALSE)
+
+                statistic[i,] = t
+                parameter[i,] = 1
+                pvalue[i,] = pval
+            }
+            result = list(statistic,parameter,pvalue)
+            names(result) = c("statistic","parameter","p.value")
+            return(result)
+        }else{
+            ###################################################################
+            # Test all interactions a time
+            ###################################################################
+            if(nge > 10){
+                stop("Do not test more than 10 interactions simultaneously,
+                     choose onebyone = TRUE")
+            }
+            x = as.matrix(covariates0)
+
+            fit = epsonlyloglikmax(modeldata,c(l,u)) # Fit under H0
+            alpha = fit[1]
+            beta = fit[2:(length(fit)-1)]
+            sigma = fit[length(fit)]
+            sigma2 = sigma*sigma
+
+            f = y-alpha - x%*%beta
+
+            xbeta = x%*%beta
+            zl = (l-alpha-xbeta)/sigma
+            zu = (u-alpha-xbeta)/sigma
+
+            h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
+            h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+            h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+            h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
+                (1-pnorm(zu)+pnorm(zl))
+
+            a = 1 - h1 - h0*h0
+            b = h0 - h2 - h0*h1
+            c = -1 + 2*h1 - h3 - h1*h1
+            d = 2 + 2*h1 - h3 - h1*h1
+
+            I11_11 = sum(a)
+            I11_22 = t(x)%*%(diag(a[,1])%*%x)
+
+            I11_21 = t(t(a)%*%x)
+            I11_12 = t(I11_21)
+
+            I11_33 = 3*sum(f^2)/sigma2 + sum(c)
+            I11_31 = 2*sum(f)/sigma + sum(b)
+            I11_13 = 2*sum(f)/sigma + sum(b)
+            I11_23 = 2*t(t(f)%*%x)/sigma + t(t(b)%*%x)
+            I11_32 = t(I11_23)
+
+            I11 = cbind(rbind(I11_11,I11_21,I11_31),
+                        rbind(I11_12,I11_22,I11_32),
+                        rbind(I11_13,I11_23,I11_33))
+
+            I22 = t(xge)%*%(diag(a[,1])%*%xge)
+
+            I21_1 = t(t(a)%*%xge)
+            I21_2 = t(t(x)%*%(diag(a[,1])%*%xge))
+            I21_3 = 2*t(t(f)%*%xge)/sigma + t(t(b)%*%xge)
             I21 = cbind(I21_1,I21_2,I21_3)
             I12 = t(I21)
 
             Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-            s = sum((y-alpha - xbeta +sigma*h0)*gi)/sigma2
-            t = s*s/Sigma
-            pval = pchisq(t,1,lower.tail=FALSE)
-
-            statistic[i,] = t
-            parameter[i,] = 1
-            pvalue[i,] = pval
-        }
-        result = list(statistic,parameter,pvalue)
-        names(result) = c("statistic","parameter","p.value")
-        return(result)
-
+            s = t(y-alpha - xbeta +sigma*h0)%*%xge/sigma2
+            t = s%*%ginv(Sigma)%*%t(s)
+            pvalue = pchisq(t,nge,lower.tail=FALSE)
+            statistic = t
+            parameter = nge
+            result = list(statistic,parameter,pvalue)
+            names(result) = c("statistic","parameter","p.value")
+            return(result)
+            }
     }else{
         ###################################################################
-        # Test all interactions a time
+        # Random sample and extreme-phenotype individuals
         ###################################################################
-        if(nge > 10){
-            stop("Do not test more than 10 interactions simultaneously,
+
+        if(onebyone){
+            ###################################################################
+            # Test gene-environment interactions one by one
+            ###################################################################
+            y_r = epsdata0[,1][randomindex ==1]
+            y_e = epsdata0[,1][randomindex ==0]
+            nr = length(y_r)
+            ne = length(y_e)
+
+            x_r = as.matrix(as.matrix(x)[randomindex ==1,])
+            x_e = as.matrix(as.matrix(x)[randomindex ==0,])
+
+            xge_r = as.matrix(as.matrix(xge)[randomindex ==1,])
+            xge_e = as.matrix(as.matrix(xge)[randomindex ==0,])
+            nge = dim(xge_e)[2]
+
+            fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
+            alpha = fit[1]
+            beta = fit[2:(length(fit)-1)]
+            sigma = fit[length(fit)]
+            sigma2 = sigma*sigma
+
+            f_r = y_r-alpha - x_r%*%beta
+            f_e = y_e-alpha - x_e%*%beta
+
+            xbeta = x_e%*%beta
+            zl = (l-alpha-xbeta)/sigma
+            zu = (u-alpha-xbeta)/sigma
+
+            h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
+            h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+            h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+            h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
+                (1-pnorm(zu)+pnorm(zl))
+
+            a = 1 - h1 - h0*h0
+            b = h0 - h2 - h0*h1
+            c = -1 + 2*h1 - h3 - h1*h1
+            d = 2 + 2*h1 - h3 - h1*h1
+
+            I11_11 = nr + sum(a)
+            I11_22 = t(x_r)%*%x_r + t(x_e)%*%(diag(a[,1])%*%x_e)
+
+            I11_21 = t(t(colSums(x_r))) + t(t(a)%*%x_e)
+            I11_12 = t(I11_21)
+
+            I11_33 = -nr + 3*sum(f_r^2)/sigma2 + 3*sum(f_e^2)/sigma2 + sum(c)
+            I11_31 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
+            I11_13 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
+            I11_23 = 2*t(t(f_r)%*%x_r)/sigma + 2*t(t(f_e)%*%x_e)/sigma + t(t(b)%*%x_e)
+            I11_32 = t(I11_23)
+
+            I11 = cbind(rbind(I11_11,I11_21,I11_31),
+                        rbind(I11_12,I11_22,I11_32),
+                        rbind(I11_13,I11_23,I11_33))
+
+            statistic = matrix(NA,ncol = 1, nrow = nge)
+            parameter = matrix(NA,ncol = 1, nrow = nge)
+            pvalue = matrix(NA,ncol = 1, nrow = nge)
+            rownames(statistic) = GE
+            rownames(parameter) = GE
+            rownames(pvalue) = GE
+
+            colnames(statistic) = "t"
+            colnames(parameter) = "d.o.f"
+            colnames(pvalue) = "p.value"
+
+            for(i in 1:nge){
+                gi_r = xge_r[,i]
+                gi_e = xge_e[,i]
+
+                I22 = sum(gi_r*gi_r) + sum(gi_e*gi_e*a[,1])
+
+                I21_1 = sum(gi_r) + sum(a[,1]*gi_e)
+                I21_2 = t(t(x_r)%*%(gi_r)) + t(t(x_e)%*%(a[,1]*gi_e))
+                I21_3 = 2*sum(f_r*gi_r)/sigma + 2*sum(f_e*gi_e)/sigma + sum(b[,1]*gi_e)
+                I21 = cbind(I21_1,I21_2,I21_3)
+                I12 = t(I21)
+
+                Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+                s = (sum((y_r - alpha - x_r%*%beta)*gi_r) + sum((y_e-alpha - xbeta +sigma*h0)*gi_e))/sigma2
+                t = s*s/Sigma
+                pval = pchisq(t,1,lower.tail=FALSE)
+
+                statistic[i,] = t
+                parameter[i,] = 1
+                pvalue[i,] = pval
+            }
+            result = list(statistic,parameter,pvalue)
+            names(result) = c("statistic","parameter","p.value")
+            return(result)
+
+        }else{
+            ###################################################################
+            # Test all interactions a time
+            ###################################################################
+            if(nge > 10){
+                stop("Do not test more than 10 interactions simultaneously,
                      choose onebyone = TRUE")
-        }
-        x = as.matrix(covariates0)
+            }
+            y_r = epsdata0[,1][randomindex ==1]
+            y_e = epsdata0[,1][randomindex ==0]
 
-        fit = epsonlyloglikmax(modeldata,c(l,u))
-        alpha = fit[1]
-        beta = fit[2:(length(fit)-1)]
-        sigma = fit[length(fit)]
-        sigma2 = sigma*sigma
+            nr = length(y_r)
+            ne = length(y_e)
 
-        xbeta = x%*%beta
-        zl = (l-alpha-xbeta)/sigma
-        zu = (u-alpha-xbeta)/sigma
+            x_r = as.matrix(as.matrix(x)[randomindex ==1,])
+            x_e = as.matrix(as.matrix(x)[randomindex ==0,])
 
-        h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
-        h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
-        h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
-        h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
-            (1-pnorm(zu)+pnorm(zl))
+            xge_r = as.matrix(as.matrix(xge)[randomindex ==1,])
+            xge_e = as.matrix(as.matrix(xge)[randomindex ==0,])
+            nge = dim(xge_e)[2]
 
-        a = 1 - h1 - h0*h0
-        b = h0 - h2 - h0*h1
-        c = 2 + 2*h1 - h3 - h1*h1
+            fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
+            alpha = fit[1]
+            beta = fit[2:(length(fit)-1)]
+            sigma = fit[length(fit)]
+            sigma2 = sigma*sigma
 
-        I11_11 = sum(a)
-        I11_22 = t(x)%*%(diag(a[,1])%*%x)
+            f_r = y_r-alpha - x_r%*%beta
+            f_e = y_e-alpha - x_e%*%beta
 
-        I11_21 = t(t(a)%*%x)
-        I11_12 = t(a)%*%x
+            xbeta = x_e%*%beta
+            zl = (l-alpha-xbeta)/sigma
+            zu = (u-alpha-xbeta)/sigma
 
-        I11_33 = sum(c)
-        I11_31 = sum(b)
-        I11_13 = sum(b)
-        I11_23 = t(t(b)%*%x)
-        I11_32 = t(b)%*%x
+            h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
+            h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+            h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+            h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/
+                (1-pnorm(zu)+pnorm(zl))
 
-        I11 = cbind(rbind(I11_11,I11_21,I11_31),
-                    rbind(I11_12,I11_22,I11_32),
-                    rbind(I11_13,I11_23,I11_33))
+            a = 1 - h1 - h0*h0
+            b = h0 - h2 - h0*h1
+            c = -1 + 2*h1 - h3 - h1*h1
+            d = 2 + 2*h1 - h3 - h1*h1
 
-        I22 = t(xge)%*%(diag(a[,1])%*%xge)
+            I11_11 = nr + sum(a)
+            I11_22 = t(x_r)%*%x_r + t(x_e)%*%(diag(a[,1])%*%x_e)
 
-        I21_1 = t(t(a)%*%xge)
-        I21_2 = t(t(x)%*%(diag(a[,1])%*%xge))
-        I21_3 = t(t(b)%*%xge)
-        I21 = cbind(I21_1,I21_2,I21_3)
-        I12 = t(I21)
+            I11_21 = t(t(colSums(x_r))) + t(t(a)%*%x_e)
+            I11_12 = t(I11_21)
 
-        Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-        s = t(y-alpha - xbeta +sigma*h0)%*%xge/sigma2
-        t = s%*%ginv(Sigma)%*%t(s)
-        pval = pchisq(t,nge,lower.tail=FALSE)
-        result = list(c(t),nge,c(pval))
-        names(result) = c("statistic","parameter","p.value")
-        return(result)
+            I11_33 = -nr + 3*sum(f_r^2)/sigma2 + 3*sum(f_e^2)/sigma2 + sum(c)
+            I11_31 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
+            I11_13 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
+            I11_23 = 2*t(t(f_r)%*%x_r)/sigma + 2*t(t(f_e)%*%x_e)/sigma + t(t(b)%*%x_e)
+            I11_32 = t(I11_23)
+
+            I11 = cbind(rbind(I11_11,I11_21,I11_31),
+                        rbind(I11_12,I11_22,I11_32),
+                        rbind(I11_13,I11_23,I11_33))
+
+            I22 = t(xge_r)%*%xge_r +  t(xge_e)%*%(diag(a[,1])%*%xge_e)
+
+            I21_1 = t(t(colSums(xge_r))) + t(t(a)%*%xge_e)
+            I21_2 = t(t(x_r)%*%xge_r) +  t(t(x_e)%*%(diag(a[,1])%*%xge_e))
+            I21_3 = 2*t(t(f_r)%*%xge_r) + 2*t(t(f_e)%*%xge_e)/sigma + t(t(b)%*%xge_e)
+            I21 = cbind(I21_1,I21_2,I21_3)
+            I12 = t(I21)
+
+            Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+            s = (t(y_r-alpha - x_r%*%beta)%*%xge_r + t(y_e-alpha - xbeta +sigma*h0)%*%xge_e)/sigma2
+            t = s%*%ginv(Sigma)%*%t(s)
+            pvalue = pchisq(t,nge,lower.tail=FALSE)
+            statistic = t
+            parameter = nge
+            result = list(statistic,parameter,pvalue)
+            names(result) = c("statistic","parameter","p.value")
+            return(result)
+            }
     }
+
+
 }
