@@ -142,6 +142,9 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 beta = fit[2:(length(fit)-1)]
                 sigma = fit[length(fit)]
                 sigma2 = sigma*sigma
+
+                f = y-alpha - x%*%beta
+
                 xbeta = x%*%beta
                 zl = (l-alpha-xbeta)/sigma
                 zu = (u-alpha-xbeta)/sigma
@@ -154,19 +157,20 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
 
                 a = 1 - h1 - h0*h0
                 b = h0 - h2 - h0*h1
-                c = 2 + 2*h1 - h3 - h1*h1
+                c = -1 + 2*h1 - h3 - h1*h1
+                d = 2 + 2*h1 - h3 - h1*h1
 
                 I11_11 = sum(a)
                 I11_22 = t(x)%*%(diag(a[,1])%*%x)
 
                 I11_21 = t(t(a)%*%x)
-                I11_12 = t(a)%*%x
+                I11_12 = t(I11_21)
 
-                I11_33 = sum(c)
-                I11_31 = sum(b)
-                I11_13 = sum(b)
-                I11_23 = t(t(b)%*%x)
-                I11_32 = t(b)%*%x
+                I11_33 = 3*sum(f^2)/sigma2 + sum(c)
+                I11_31 = 2*sum(f)/sigma + sum(b)
+                I11_13 = 2*sum(f)/sigma + sum(b)
+                I11_23 = 2*t(t(f)%*%x)/sigma + t(t(b)%*%x)
+                I11_32 = t(I11_23)
 
                 I11 = cbind(rbind(I11_11,I11_21,I11_31),
                             rbind(I11_12,I11_22,I11_32),
@@ -174,16 +178,17 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
 
                 for(i in 1:ng){
                     gi = g[,i]
+
                     I22 = sum(gi*gi*a[,1])
 
                     I21_1 = sum(a[,1]*gi)
                     I21_2 = t(t(x)%*%(a[,1]*gi))
-                    I21_3 = sum(b[,1]*gi)
+                    I21_3 = 2*sum(f*gi)/sigma + sum(b[,1]*gi)
                     I21 = cbind(I21_1,I21_2,I21_3)
                     I12 = t(I21)
 
                     Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-                    s = sum((y-alpha - xbeta +sigma*h0)*gi)/sigma2
+                    s = (sum((y-alpha - xbeta +sigma*h0)*gi))/sigma2
                     t = s*s/Sigma
                     pval = pchisq(t,1,lower.tail=FALSE)
 
@@ -252,13 +257,15 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 ###############################################################
                 # Covariates present in the null model
                 ###############################################################
-                x = covariates0
+                x = as.matrix(covariates0)
 
-                fit = epsonlyloglikmax(modeldata,c(l,u))
+                fit = epsonlyloglikmax(modeldata,c(l,u)) # Fit under H0
                 alpha = fit[1]
                 beta = fit[2:(length(fit)-1)]
                 sigma = fit[length(fit)]
                 sigma2 = sigma*sigma
+
+                f = y-alpha - x%*%beta
 
                 xbeta = x%*%beta
                 zl = (l-alpha-xbeta)/sigma
@@ -272,19 +279,20 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
 
                 a = 1 - h1 - h0*h0
                 b = h0 - h2 - h0*h1
-                c = 2 + 2*h1 - h3 - h1*h1
+                c = -1 + 2*h1 - h3 - h1*h1
+                d = 2 + 2*h1 - h3 - h1*h1
 
                 I11_11 = sum(a)
                 I11_22 = t(x)%*%(diag(a[,1])%*%x)
 
                 I11_21 = t(t(a)%*%x)
-                I11_12 = t(a)%*%x
+                I11_12 = t(I11_21)
 
-                I11_33 = sum(c)
-                I11_31 = sum(b)
-                I11_13 = sum(b)
-                I11_23 = t(t(b)%*%x)
-                I11_32 = t(b)%*%x
+                I11_33 = 3*sum(f^2)/sigma2 + sum(c)
+                I11_31 = 2*sum(f)/sigma + sum(b)
+                I11_13 = 2*sum(f)/sigma + sum(b)
+                I11_23 = 2*t(t(f)%*%x)/sigma + t(t(b)%*%x)
+                I11_32 = t(I11_23)
 
                 I11 = cbind(rbind(I11_11,I11_21,I11_31),
                             rbind(I11_12,I11_22,I11_32),
@@ -294,7 +302,7 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
 
                 I21_1 = t(t(a)%*%g)
                 I21_2 = t(t(x)%*%(diag(a[,1])%*%g))
-                I21_3 = t(t(b)%*%g)
+                I21_3 = 2*t(t(f)%*%g)/sigma + t(t(b)%*%g)
                 I21 = cbind(I21_1,I21_2,I21_3)
                 I12 = t(I21)
 
@@ -387,6 +395,9 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 sigma = fit[length(fit)]
                 sigma2 = sigma*sigma
 
+                f_r = y_r-alpha - x_r%*%beta
+                f_e = y_e-alpha - x_e%*%beta
+
                 xbeta = x_e%*%beta
                 zl = (l-alpha-xbeta)/sigma
                 zu = (u-alpha-xbeta)/sigma
@@ -399,7 +410,8 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
 
                 a = 1 - h1 - h0*h0
                 b = h0 - h2 - h0*h1
-                c = 2 + 2*h1 - h3 - h1*h1
+                c = -1 + 2*h1 - h3 - h1*h1
+                d = 2 + 2*h1 - h3 - h1*h1
 
                 I11_11 = nr + sum(a)
                 I11_22 = t(x_r)%*%x_r + t(x_e)%*%(diag(a[,1])%*%x_e)
@@ -407,11 +419,11 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 I11_21 = t(t(colSums(x_r))) + t(t(a)%*%x_e)
                 I11_12 = t(I11_21)
 
-                I11_33 = 2*nr + sum(c)
-                I11_31 = sum(b)
-                I11_13 = sum(b)
-                I11_23 = t(t(b)%*%x_e)
-                I11_32 = t(b)%*%x_e
+                I11_33 = -nr + 3*sum(f_r^2)/sigma2 + 3*sum(f_e^2)/sigma2 + sum(c)
+                I11_31 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
+                I11_13 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
+                I11_23 = 2*t(t(f_r)%*%x_r)/sigma + 2*t(t(f_e)%*%x_e)/sigma + t(t(b)%*%x_e)
+                I11_32 = t(I11_23)
 
                 I11 = cbind(rbind(I11_11,I11_21,I11_31),
                             rbind(I11_12,I11_22,I11_32),
@@ -425,7 +437,7 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
 
                     I21_1 = sum(gi_r) + sum(a[,1]*gi_e)
                     I21_2 = t(t(x_r)%*%(gi_r)) + t(t(x_e)%*%(a[,1]*gi_e))
-                    I21_3 = sum(b[,1]*gi_e)
+                    I21_3 = 2*sum(f_r*gi_r)/sigma + 2*sum(f_e*gi_e)/sigma + sum(b[,1]*gi_e)
                     I21 = cbind(I21_1,I21_2,I21_3)
                     I12 = t(I21)
 
@@ -469,7 +481,7 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
 
                 I11_11 = nr + ne*a
 
-                I11_33 = nr - 3*sum(f_r^2)/sigma2 + ne*c - 3*sum(f_e^2)/sigma2
+                I11_33 = -nr + 3*sum(f_r^2)/sigma2 + ne*c + 3*sum(f_e^2)/sigma2
                 I11_31 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + ne*b
                 I11_13 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + ne*b
 
@@ -518,14 +530,17 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 ###############################################################
                 # Covariates present in the null model
                 ###############################################################
-                x_r = as.matrix(covariates0)[randomindex ==1,]
-                x_e = as.matrix(covariates0)[randomindex ==0,]
+                x_r = as.matrix(as.matrix(covariates0)[randomindex ==1,])
+                x_e = as.matrix(as.matrix(covariates0)[randomindex ==0,])
 
                 fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
                 alpha = fit[1]
                 beta = fit[2:(length(fit)-1)]
                 sigma = fit[length(fit)]
                 sigma2 = sigma*sigma
+
+                f_r = y_r-alpha - x_r%*%beta
+                f_e = y_e-alpha - x_e%*%beta
 
                 xbeta = x_e%*%beta
                 zl = (l-alpha-xbeta)/sigma
@@ -539,7 +554,8 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
 
                 a = 1 - h1 - h0*h0
                 b = h0 - h2 - h0*h1
-                c = 2 + 2*h1 - h3 - h1*h1
+                c = -1 + 2*h1 - h3 - h1*h1
+                d = 2 + 2*h1 - h3 - h1*h1
 
                 I11_11 = nr + sum(a)
                 I11_22 = t(x_r)%*%x_r + t(x_e)%*%(diag(a[,1])%*%x_e)
@@ -547,11 +563,11 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 I11_21 = t(t(colSums(x_r))) + t(t(a)%*%x_e)
                 I11_12 = t(I11_21)
 
-                I11_33 = 2*nr + sum(c)
-                I11_31 = sum(b)
-                I11_13 = sum(b)
-                I11_23 = t(t(b)%*%x_e)
-                I11_32 = t(b)%*%x_e
+                I11_33 = -nr + 3*sum(f_r^2)/sigma2 + 3*sum(f_e^2)/sigma2 + sum(c)
+                I11_31 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
+                I11_13 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
+                I11_23 = 2*t(t(f_r)%*%x_r)/sigma + 2*t(t(f_e)%*%x_e)/sigma + t(t(b)%*%x_e)
+                I11_32 = t(I11_23)
 
                 I11 = cbind(rbind(I11_11,I11_21,I11_31),
                             rbind(I11_12,I11_22,I11_32),
@@ -561,7 +577,7 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
 
                 I21_1 = t(t(colSums(g_r))) + t(t(a)%*%g_e)
                 I21_2 = t(t(x_r)%*%g_r) +  t(t(x_e)%*%(diag(a[,1])%*%g_e))
-                I21_3 = t(t(b)%*%g_e)
+                I21_3 = 2*t(t(f_r)%*%g_r) + 2*t(t(f_e)%*%g_e)/sigma + t(t(b)%*%g_e)
                 I21 = cbind(I21_1,I21_2,I21_3)
                 I12 = t(I21)
 
@@ -578,11 +594,13 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 ###############################################################
                 # No covariates present in the null model
                 ###############################################################
-
                 fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
                 alpha = fit[1]
                 sigma = fit[length(fit)]
                 sigma2 = sigma*sigma
+
+                f_r = y_r-alpha
+                f_e = y_e-alpha
 
                 zl = (l-alpha)/sigma
                 zu = (u-alpha)/sigma
@@ -595,21 +613,22 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
 
                 a = 1 - h1 - h0*h0
                 b = h0 - h2 - h0*h1
-                c = 2 + 2*h1 - h3 - h1*h1
+                c = -1 + 2*h1 - h3 - h1*h1
+                d = 2 + 2*h1 - h3 - h1*h1
 
                 I11_11 = nr + ne*a
 
-                I11_33 = 2*nr + ne*c
-                I11_31 = ne*b
-                I11_13 = ne*b
+                I11_33 = -nr + 3*sum(f_r^2)/sigma2 + 3*sum(f_e^2)/sigma2 + ne*c
+                I11_31 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
+                I11_13 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
 
                 I11 = cbind(rbind(I11_11,I11_31),
                             rbind(I11_13,I11_33))
 
                 I22 = t(g_r)%*%g_r +  a*t(g_e)%*%g_e
 
-                I21_1 = t(t(colSums(g_r))) + a*t(t(colSums(g_e)))
-                I21_3 = b*t(t(colSums(g_e)))
+                I21_1 = t(t(colSums(g_r))) + a*t(t(colSums(g_r)))
+                I21_3 = 2*t(t(f_r)%*%g_r) + 2*t(t(f_e)%*%g_e)/sigma + b*t(t(colSums(g_r)))
                 I21 = cbind(I21_1,I21_3)
                 I12 = t(I21)
 
