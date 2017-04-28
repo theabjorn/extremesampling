@@ -207,16 +207,6 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
             sigma = summary(fit)$sigma
             sigma2 = sigma*sigma
 
-            # confounding
-            ux = as.matrix(unique(x_cc[,cind]))
-            nu = dim(ux)[1]
-            if(nu != dim(as.matrix(unique(xe[,cind])))[1]){
-                warning("All unique levels of confounder not found in extreme sample")
-            }
-            uindex = list()
-            for(u in 1:nu){
-                uindex[[u]] = (x_cc[,cind] == ux[u,])
-            }
 
             for(i in 1:ng){
                 extreme = !is.na(xg[,i])
@@ -227,6 +217,17 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
                 x_ic = as.matrix(xe[!extreme,])
                 n_cc = length(y_cc)
                 n_ic = length(y_ic)
+
+                # confounding
+                ux = as.matrix(unique(x_cc[,cind]))
+                nu = dim(ux)[1]
+                if(nu != dim(as.matrix(unique(xe[,cind])))[1]){
+                    warning("All unique levels of confounder not found in extreme sample")
+                }
+                uindex = list()
+                for(u in 1:nu){
+                    uindex[[u]] = (x_cc[,cind] == ux[u,])
+                }
 
                 eg_ic = c()
                 varg_ic = c()
