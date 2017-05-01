@@ -112,16 +112,6 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
     totest = colnames(SNP)
     xg = as.matrix(SNP)
     ng = dim(xg)[2]
-    # extreme = !is.na(xg[,1])
-    # y_cc = y[extreme]
-    # y_ic = y[!extreme]
-    # g_cc = as.matrix(xg[extreme,])
-    # if(isxe){
-    #     x_cc = as.matrix(xe[extreme,])
-    #     x_ic = as.matrix(xe[!extreme,])
-    # }
-    # n_cc = length(y_cc)
-    # n_ic = length(y_ic)
 
     if(onebyone){
         ###################################################################
@@ -182,7 +172,8 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
 
                 I12 = matrix(c(I12_1,I12_2,I12_3))
 
-                I33 = (1/sigma2)*(1/n_cc)*varg*(sum((y_cc-alpha-x_cc%*%beta)))^2
+                I33 = (1/n_cc)*varg*(sum((y_cc-alpha-x_cc%*%beta)))^2
+                I33 = I33/sigma2
 
                 Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
 
@@ -327,6 +318,7 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
                 I12 = matrix(c(I12_1,I12_3))
 
                 I33 = (1/n_cc)*varg*(sum(y_cc-alpha))^2
+                I33 = I33/sigma2
 
                 Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
 
