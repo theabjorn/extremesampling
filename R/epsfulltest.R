@@ -182,7 +182,7 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
 
                 I12 = matrix(c(I12_1,I12_2,I12_3))
 
-                I33 = (1/n_cc)*varg*(sum((y_cc-alpha-x_cc%*%beta)^2))
+                I33 = (1/sigma2)*(1/n_cc)*varg*(sum((y_cc-alpha-x_cc%*%beta)))^2
 
                 Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
 
@@ -276,8 +276,9 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
                 I33 = 0
                 for(u in 1:nu){
                     uind = uindex[[u]]
-                    I33 = I33 + (1/(length(y_cc[uind])))*varg[u]*(sum((y_cc[uind]-alpha-x_cc[uind,]%*%beta)^2))
+                    I33 = I33 + (1/(length(y_cc[uind])))*varg[u]*(sum((y_cc[uind]-alpha-x_cc[uind,]%*%beta)))^2
                 }
+                I33 = I33/sigma2
 
                 Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
                 s = (sum((y_cc - alpha - x_cc%*%beta)*g) +
@@ -389,7 +390,8 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
 
             I12 = rbind(I12_1,I12_2,I12_3)
 
-            I33 = (1/n_cc)*varg*(sum((y_cc-alpha-x_cc%*%beta)^2))
+            I33 = (1/n_cc)*varg*(sum((y_cc-alpha-x_cc%*%beta)))^2
+            I33 = I33/sigma2
 
             Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
 
@@ -436,7 +438,8 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
 
             I12 = rbind(I12_1,I12_3)
 
-            I33 = (1/n_cc)*varg*(sum((y_cc-alpha)^2))
+            I33 = (1/n_cc)*varg*(sum((y_cc-alpha)))^2
+            I33 = I33/sigma2
 
             Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
             s = (t(y_cc - alpha)%*%g_cc + sum(y_ic - alpha)*eg)/sigma2
