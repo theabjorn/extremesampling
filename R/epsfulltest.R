@@ -112,16 +112,16 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
     totest = colnames(SNP)
     xg = as.matrix(SNP)
     ng = dim(xg)[2]
-    extreme = !is.na(xg[,1])
-    y_cc = y[extreme]
-    y_ic = y[!extreme]
-    g_cc = as.matrix(xg[extreme,])
-    if(isxe){
-        x_cc = as.matrix(xe[extreme,])
-        x_ic = as.matrix(xe[!extreme,])
-    }
-    n_cc = length(y_cc)
-    n_ic = length(y_ic)
+    # extreme = !is.na(xg[,1])
+    # y_cc = y[extreme]
+    # y_ic = y[!extreme]
+    # g_cc = as.matrix(xg[extreme,])
+    # if(isxe){
+    #     x_cc = as.matrix(xe[extreme,])
+    #     x_ic = as.matrix(xe[!extreme,])
+    # }
+    # n_cc = length(y_cc)
+    # n_ic = length(y_ic)
 
     if(onebyone){
         ###################################################################
@@ -182,7 +182,10 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
 
                 I12 = matrix(c(I12_1,I12_2,I12_3))
 
-                Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12)
+                I33 = (1/n_cc)*varg*(sum(y_cc-alpha-x_cc%*%beta))^2
+
+                Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
+
                 s = (sum((y_cc - alpha - x_cc%*%beta)*g) +
                          sum((y_ic - alpha-x_ic%*%beta)*eg))/sigma2
                 t = (s*s)/Sigma
@@ -233,6 +236,7 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
                 varg_ic = c()
                 egg_ic = c()
 
+                varg = c()
                 for(u in 1:nu){
                     uind = uindex[[u]]
                     tempind = (x_ic[,cind] == ux[u,])
@@ -241,10 +245,12 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
                         eg_ic[tempind] = mean(g[uind])
                         varg_ic[tempind] = var(g[uind])
                         egg_ic[tempind] = varg_ic[tempind] + eg_ic[tempind]^2
+                        varg[u] = var(g[uind])
                     }else{
                         eg_ic[tempind] = mean(g)
                         varg_ic[tempind] = var(g)
                         egg_ic[tempind] = varg_ic[tempind] + eg_ic[tempind]^2
+                        varg[u] = var(g[uind])
                     }
                 }
 
@@ -253,8 +259,7 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
                                   2*(t(y-alpha-xe%*%beta)%*%xe)/sigma),
                             rbind(2*sum(y-alpha-xe%*%beta)/sigma,
                                   2*t(xe)%*%(y-alpha-xe%*%beta)/sigma,
-                                  ((3/sigma2)*sum((y-alpha-xe%*%beta)^2)-n))
-                )
+                                  ((3/sigma2)*sum((y-alpha-xe%*%beta)^2)-n)))
 
                 I22 = sum(g^2) + sum(egg_ic) -
                     (1/sigma2)*sum(varg_ic*(y_ic-alpha-x_ic%*%beta)^2)
@@ -268,7 +273,16 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
 
                 I12 = matrix(c(I12_1,I12_2,I12_3))
 
-                Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12)
+                I33 = 0
+                for(u in 1:nu){
+                    uind = uindex[[u]]
+                    I33 = I33 + (1/(length(y_cc[uind])))*varg[u]*(sum(y_cc[uind]-alpha-x_cc[uind,]%*%beta))^2
+                }
+                message(I33)
+
+                Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
+                message(Sigma)
+                message((1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12))
                 s = (sum((y_cc - alpha - x_cc%*%beta)*g) +
                          sum((y_ic - alpha-x_ic%*%beta)*eg_ic))/sigma2
                 t = (s*s)/Sigma
@@ -314,7 +328,10 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
                     2*sum((y_ic-alpha)*eg/sigma)
                 I12 = matrix(c(I12_1,I12_3))
 
-                Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12)
+                I33 = (1/n_cc)*varg*(sum(y_cc-alpha))^2
+
+                Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
+
                 s = (sum((y_cc - alpha)*g) + sum((y_ic - alpha)*eg))/sigma2
                 t = (s*s)/Sigma
                 pval = pchisq(t,1,lower.tail=FALSE)
@@ -343,6 +360,15 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
             sigma = summary(fit)$sigma
             sigma2 = sigma*sigma
 
+            extreme = !is.na(xg[,1])
+            y_cc = y[extreme]
+            y_ic = y[!extreme]
+            g_cc = as.matrix(xg[extreme,])
+            x_cc = as.matrix(xe[extreme,])
+            x_ic = as.matrix(xe[!extreme,])
+            n_cc = length(y_cc)
+            n_ic = length(y_ic)
+
             eg = matrix(colMeans(g_cc),nrow = 1)
             egg = (1/n_cc)*t(g_cc)%*%g_cc
             varg = var(g_cc)
@@ -366,7 +392,10 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
 
             I12 = rbind(I12_1,I12_2,I12_3)
 
-            Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12)
+            I33 = (1/n_cc)*varg*(sum(y_cc-alpha-x_cc%*%beta))^2
+
+            Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
+
             s = (t(y_cc - alpha - x_cc%*%beta)%*%g_cc +
                      sum(y_ic - alpha-x_ic%*%beta)*eg)/sigma2
             t = s%*%ginv(Sigma)%*%t(s)
@@ -386,6 +415,13 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
             sigma = summary(fit)$sigma
             sigma2 = sigma*sigma
 
+            extreme = !is.na(xg[,1])
+            y_cc = y[extreme]
+            y_ic = y[!extreme]
+            g_cc = as.matrix(xg[extreme,])
+            n_cc = length(y_cc)
+            n_ic = length(y_ic)
+
             eg = matrix(colMeans(g_cc),nrow = 1)
             egg = (1/n_cc)*t(g_cc)%*%g_cc
             varg = var(g_cc)
@@ -403,7 +439,9 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
 
             I12 = rbind(I12_1,I12_3)
 
-            Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12)
+            I33 = (1/n_cc)*varg*(sum(y_cc-alpha))^2
+
+            Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
             s = (t(y_cc - alpha)%*%g_cc + sum(y_ic - alpha)*eg)/sigma2
             t = s%*%ginv(Sigma)%*%t(s)
             pval = pchisq(t,ng,lower.tail=FALSE)
