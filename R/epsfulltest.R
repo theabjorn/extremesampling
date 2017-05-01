@@ -278,11 +278,8 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
                     uind = uindex[[u]]
                     I33 = I33 + (1/(length(y_cc[uind])))*varg[u]*(sum(y_cc[uind]-alpha-x_cc[uind,]%*%beta))^2
                 }
-                message(I33)
 
                 Sigma = (1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12 - I33)
-                message(Sigma)
-                message((1/sigma2)*(I22 - t(I12)%*%ginv(I11)%*%I12))
                 s = (sum((y_cc - alpha - x_cc%*%beta)*g) +
                          sum((y_ic - alpha-x_ic%*%beta)*eg_ic))/sigma2
                 t = (s*s)/Sigma
