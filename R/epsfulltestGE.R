@@ -124,7 +124,7 @@ epsfull.testGE = function(nullmodel, GE, onebyone = TRUE,
         }
     }
 
-    if(confounder){stop("Confounding currently not allowed for interactions")}
+    #if(confounder){stop("Confounding currently not allowed for interactions")}
 
     geneffect = "additive"
     if(missing(gfreq)){gfreq = NA}
@@ -147,40 +147,60 @@ epsfull.testGE = function(nullmodel, GE, onebyone = TRUE,
         colnames(parameter) = GE
         colnames(pvalue) = GE
 
-        if(hwe){
-            #######################################################
-            # Hardy Weinberg
-            #######################################################
-            if(missing(maf)){maf = NA}
-            fit0 = epsfullloglikmax(data,ng, hwe = TRUE, maf = maf,
-                                    geneffect = geneffect,
-                                    ll = TRUE)[[1]]
-            for(l in 1:nint){
-                fit1 = epsfullloglikmaxint(data,ng = ng,
-                                           hwe = TRUE, maf = maf,
-                                           interactind = list(interactind[[l]]),
-                                           ll = TRUE)[[1]]
-                t = -2*(fit0 - fit1)
-                pval = pchisq(t,1,lower.tail=FALSE)
+        if(!confounder){
+            if(hwe){
+                #######################################################
+                # Hardy Weinberg
+                #######################################################
+                if(missing(maf)){maf = NA}
+                fit0 = epsfullloglikmax(data,ng, hwe = TRUE, maf = maf,
+                                        geneffect = geneffect,
+                                        ll = TRUE)[[1]]
+                for(l in 1:nint){
+                    fit1 = epsfullloglikmaxint(data,ng = ng,
+                                               hwe = TRUE, maf = maf,
+                                               interactind = list(interactind[[l]]),
+                                               ll = TRUE)[[1]]
+                    t = -2*(fit0 - fit1)
+                    pval = pchisq(t,1,lower.tail=FALSE)
 
-                statistic[,l] = t
-                parameter[,l] = 1
-                pvalue[,l] = pval
+                    statistic[,l] = t
+                    parameter[,l] = 1
+                    pvalue[,l] = pval
+                }
+                result = list(statistic,parameter,pvalue)
+                names(result) = c("statistic","parameter","p.value")
+                return(result)
+            }else{
+                #######################################################
+                # Hardy Weinberg not assumed
+                #######################################################
+                fit0 = epsfullloglikmax(data,ng,
+                                        geneffect = geneffect,
+                                        ll = TRUE)[[1]]
+                for(l in 1:nint){
+                    fit1 = epsfullloglikmaxint(data,ng = ng,
+                                               interactind = list(interactind[[l]]),
+                                               ll = TRUE)[[1]]
+                    t = -2*(fit0 - fit1)
+                    pval = pchisq(t,1,lower.tail=FALSE)
+
+                    statistic[,l] = t
+                    parameter[,l] = 1
+                    pvalue[,l] = pval
+                }
+                result = list(statistic,parameter,pvalue)
+                names(result) = c("statistic","parameter","p.value")
+                return(result)
             }
-            result = list(statistic,parameter,pvalue)
-            names(result) = c("statistic","parameter","p.value")
-            return(result)
         }else{
-            #######################################################
-            # Hardy Weinberg not assumed
-            #######################################################
-            fit0 = epsfullloglikmax(data,ng,
-                                    geneffect = geneffect,
-                                    ll = TRUE)[[1]]
+            fit0 = epsfullloglikmaxcond(data, ng,cind = cind,
+                                        hessian = TRUE)[[1]]
             for(l in 1:nint){
-                fit1 = epsfullloglikmaxint(data,ng = ng,
-                                           interactind = list(interactind[[l]]),
-                                           ll = TRUE)[[1]]
+                fit1 = epsfullloglikmaxcondint(data, ng,
+                                               cind = cind,
+                                               interactind = interactind,
+                                               hessian = TRUE)[[1]]
                 t = -2*(fit0 - fit1)
                 pval = pchisq(t,1,lower.tail=FALSE)
 
