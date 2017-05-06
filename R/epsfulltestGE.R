@@ -124,6 +124,8 @@ epsfull.testGE = function(nullmodel, GE, onebyone = TRUE,
         }
     }
 
+
+
     #if(confounder){stop("Confounding currently not allowed for interactions")}
 
     geneffect = "additive"
@@ -133,6 +135,22 @@ epsfull.testGE = function(nullmodel, GE, onebyone = TRUE,
     xe = as.matrix(covariates0[,xid])
     data = cbind(y,xe,xg)
     ng = dim(xg)[2]
+
+    if(confounder){
+        if(missing(cx)){cx = colnames(xe)
+        }else if(is.na(match(cx,colnames(xe)))){
+            stop("The name of the confounder given is not the name of a covariate.")
+        }
+        message(paste("Confounders: ", toString(cx),sep=""))
+        cind = match(cx,colnames(xe))
+        xecind = as.matrix(xe[,cind])
+        for(j in 1:length(cx)){
+            if(length(unique(xecind[,j])) > 10){
+                stop("Only discrete confounders with less than or equal to 10 unique levels are accepted as confounders.
+                     Please recode you confounder to satisfy this.")
+            }
+        }
+    }
 
     if(onebyone){
         #######################################################################
@@ -195,12 +213,12 @@ epsfull.testGE = function(nullmodel, GE, onebyone = TRUE,
             }
         }else{
             fit0 = epsfullloglikmaxcond(data, ng,cind = cind,
-                                        hessian = TRUE)[[1]]
+                                        ll = TRUE)[[1]]
             for(l in 1:nint){
                 fit1 = epsfullloglikmaxcondint(data, ng,
                                                cind = cind,
                                                interactind = interactind,
-                                               hessian = TRUE)[[1]]
+                                               ll = TRUE)[[1]]
                 t = -2*(fit0 - fit1)
                 pval = pchisq(t,1,lower.tail=FALSE)
 
