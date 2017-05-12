@@ -133,6 +133,8 @@ epsfull.testGE = function(nullmodel, GE, onebyone = TRUE,
 
     xg = as.matrix(covariates0[,snpid])
     xe = as.matrix(covariates0[,xid])
+    colnames(xe) = colnames(covariates0)[xid]
+    colnames(xg) = colnames(covariates0)[snpid]
     data = cbind(y,xe,xg)
     ng = dim(xg)[2]
 
