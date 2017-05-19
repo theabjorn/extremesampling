@@ -1,65 +1,22 @@
 # Log-likelihood function for EPS-full
 # Interactions, no confounding
 
-epsfullloglikint = function(parameters,data,ng,interactind,
-                            geneffect = "additive"){
-    len = dim(data)[2]
-    neg = length(interactind)
+epsfullloglikint = function(parameters,y_cc,y_ic,x_cc,x_ic,g_cc,xg_cc,n_cc,n_ic,
+                            genotypes,interactind,interactgenotypes,ng,neg){
+
+    len = 1 + dim(x_cc)[2] + dim(g_cc)[2]
+
     m = parameters[(len+1+neg+1):length(parameters)]
     param = parameters[1:(len+1+neg)]
 
-    # Extract all combinations of genotypes, and the
-    # corresponding probability for each combination.
-    # It is assumed that all genetic variables are statistically
-    # independent. Use function genprob().
-    if(geneffect == "additive"){
-        probs = c()
-        count = 1
-        for(t in 1:ng){
-            probs[count] = exp(m[count])/(1+exp(m[count]))
-            probs[count + 1] = (1-probs[count])*
-                exp(m[count+1])/(1+exp(m[count+1]))
-            count = count + 2
-        }
-        getgeno = genprob(ng,probs)
-        genotypes = as.matrix(getgeno[[1]])
-        genoprobs = getgeno[[2]]
-        #print(genoprobs)
-    }else{
-        probs = 0.9*exp(m)/(1+exp(m))
-        getgeno = genprob(ng,probs, geneffect = geneffect)
-        genotypes = as.matrix(getgeno[[1]])
-        genoprobs = getgeno[[2]]
+    nug = length(m)+1
+    probs = c()
+    probs[1] = exp(m[1])/(1+exp(m[1]))
+    for(k in 2:(nug-1)){
+        probs[k] = (1-sum(probs))*exp(m[k])/(1+exp(m[k]))
     }
 
-
-
-    data_cc = data[!is.na(data[,len]),]
-    data_ic = data[is.na(data[,len]),1:(len-ng)]
-
-    y_cc = data_cc[,1]
-    y_ic = data_ic[,1]
-    g_cc = as.matrix(data_cc[,(len-ng+1):len])
-    x_cc = as.matrix(data_cc[,2:(len-ng)])
-    x_ic = as.matrix(data_ic[,2:(len-ng)])
-    n_cc = length(y_cc)
-    n_ic = length(y_ic)
-
-    neg = length(interactind)
-    xg_cc = matrix(NA,ncol = length(interactind),nrow = n_cc)
-    for(i in 1:neg){
-        xg_cc[,i] = x_cc[,interactind[[i]][2]]*g_cc[,interactind[[i]][1]]
-    }
-    interactgenotypes = list()
-
-    for (i in 1:dim(genotypes)[1]){
-        interactgenotypes[[i]] = matrix(NA,ncol = length(interactind),
-                                        nrow = n_ic)
-        for(j in 1:neg){
-            interactgenotypes[[i]][,j] =
-                x_ic[,interactind[[j]][2]]*genotypes[i,interactind[[j]][1]]
-        }
-    }
+    genoprobs = c(probs,(1-sum(probs)))
 
     lenp = length(param)
     alpha = param[1]
@@ -79,14 +36,21 @@ epsfullloglikint = function(parameters,data,ng,interactind,
     }
     temp = sum(log(temp*(1/(sqrt(2*pi)*sigma))))
 
-    # Add up contribution of completely observed individuals
-    # with respect to the log of probability of their individual genotypes.
-    # Probabilities extracted from genoprobs
-    if(geneffect=="additive"){rowind = 3}else{rowind = 2}
-    ind = rep(1,n_cc)
-    for(j in 1:ng){
-        ind = ind + g_cc[,j]*(rowind)^(j-1)
+    # # Add up contribution of completely observed individuals
+    # # with respect to the log of probability of their individual genotypes.
+    # # Probabilities extracted from genoprobs
+    # if(geneffect=="additive"){rowind = 3}else{rowind = 2}
+    # ind = rep(1,n_cc)
+    # for(j in 1:ng){
+    #     ind = ind + g_cc[,j]*(rowind)^(j-1)
+    # }
+    # temp2 = sum(log(genoprobs[ind]))
+
+    getgenoprob = function(obsgeno){
+        ind = which(as.vector(rowSums(abs(genotypes - matrix(obsgeno,ncol=dim(genotypes)[2],nrow = dim(genotypes)[1]))))==0)
+        return(ind)
     }
+    ind = unlist(apply(g_cc,1,getgenoprob))
     temp2 = sum(log(genoprobs[ind]))
 
     # Add up contribution of completely observed individuals

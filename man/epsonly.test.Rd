@@ -4,7 +4,7 @@
 \alias{epsonly.test}
 \title{Test for associations under the EPS-only design}
 \usage{
-epsonly.test(nullmodel, SNP, cutoffs, onebyone = TRUE)
+epsonly.test(nullmodel, SNP, cutoffs, randomindex, onebyone = TRUE)
 }
 \arguments{
 \item{nullmodel}{an object of class \code{\link[stats]{formula}}, that
@@ -14,6 +14,9 @@ describes the linear regression model under the null hypothesis}
 
 \item{cutoffs}{a vector \code{c(l,u)} of the lower and upper cut-offs used
 for extreme sampling}
+
+\item{randomindex}{a vector which indicates if observations are from a random
+or extreme sample}
 
 \item{onebyone}{\code{TRUE} if genetic variables should be tested one by one
 for inclusion in the model, default \code{TRUE}}

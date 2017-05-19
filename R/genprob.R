@@ -28,3 +28,8 @@ genprob = function(ng,probs,geneffect = "additive"){
     probs2 = apply(probs,1,prod)
     return(list(geno,probs2))
 }
+
+getgenoprob = function(obsgeno, genotypes){
+    ind = which(as.vector(rowSums(abs(genotypes - matrix(obsgeno,ncol=dim(genotypes)[2],nrow = dim(genotypes)[1]))))==0)
+    return(ind)
+}

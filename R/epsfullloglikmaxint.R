@@ -1,54 +1,80 @@
 # Maximimize log-likelihood function for EPS-full
 # Interactions, no confounding
 
-epsfullloglikmaxint = function(data,ng,interactind = list(NA),hwe = FALSE,
-                               maf=NA,geneffect="additive",
-                               ll= FALSE, hessian = FALSE){
-    y = data[,1]
-    xe = as.matrix(data[,2:(dim(data)[2]-ng)])
-    xg = as.matrix(data[,(dim(data)[2]-ng+1):(dim(data)[2])])
-    if(is.na(interactind[[1]][1])){
-        interactind = list()
-        for(i in 1:dim(xg)[2]){
-            for(j in 1:dim(xe)[2]){
-                interactind[[(length(interactind)+1)]] = c(i,j)
-            }
+epsfullloglikmaxint = function(data,ng,interactind,hwe = FALSE,
+                               maf = NA, ll = FALSE, hessian = FALSE){
+
+    len = dim(data)[2]
+
+    neg = length(interactind)
+
+    data_cc = data[!is.na(data[,len]),]
+    data_ic = data[is.na(data[,len]),1:(len-ng)]
+
+    y_cc = data_cc[,1]
+    y_ic = data_ic[,1]
+    g_cc = as.matrix(data_cc[,(len-ng+1):len])
+    x_cc = as.matrix(data_cc[,2:(len-ng)])
+    x_ic = as.matrix(data_ic[,2:(len-ng)])
+    n_cc = length(y_cc)
+    n_ic = length(y_ic)
+
+    genotypes = unique(g_cc)
+
+    xg_cc = matrix(NA,ncol = neg,nrow = n_cc)
+    for(i in 1:neg){
+        xg_cc[,i] = x_cc[,interactind[[i]][2]]*g_cc[,interactind[[i]][1]]
+    }
+    interactgenotypes = list()
+    for (i in 1:dim(genotypes)[1]){
+        interactgenotypes[[i]] = matrix(NA,ncol = length(interactind),nrow = n_ic)
+        for(j in 1:neg){
+            interactgenotypes[[i]][,j] = x_ic[,interactind[[j]][2]]*genotypes[i,interactind[[j]][1]]
         }
     }
-    xeg = matrix(NA,ncol = length(interactind),nrow = dim(xe)[1])
 
-    for(i in 1:length(interactind)){
-        xeg[,i] = xe[,interactind[[i]][2]]*xg[,interactind[[i]][1]]
-    }
-    alldata = cbind(data,xeg)
+    init = lm(y_cc ~ x_cc+g_cc+xg_cc)
 
     if(hwe){
         ###############################################################
-        # Hardy-Weinberg assumed
+        # Hardy-Weinberg assumed, independent SNPs
         ###############################################################
         if(!is.na(as.matrix(maf)[1,1])){
             ###############################################################
             # MAF given by user
             ###############################################################
-            len = dim(alldata)[2]
-            data_cc = alldata[!is.na(alldata[,len]),]
-            y = data_cc[,1]
-            x = as.matrix(data_cc[,2:len])
-            init = lm(y ~ x)
+
+            getgeno = genprobhwe(ng,maf,geneffect = "additive")
+            genotypes = as.matrix(getgeno[[1]])
+            genoprobs = getgeno[[2]]
+
             a.init = c(init$coef,log(summary(init)$sigma^2))
+
             result = optim(a.init,
-                           epsfullloglikinthwe,
-                           data = data,
-                           ng = ng,
+                           epsfullloglikinthwe_maf,
+                           y_cc = y_cc,
+                           y_ic = y_ic,
+                           x_cc = x_cc,
+                           x_ic = x_ic,
+                           g_cc = g_cc,
+                           xg_cc = xg_cc,
+                           n_cc = n_cc,
+                           n_ic = n_ic,
                            interactind = interactind,
+                           interactgenotypes = interactgenotypes,
                            maf = maf,
-                           geneffect = geneffect,
+                           genotypes = genotypes,
+                           genoprobs = genoprobs,
+                           ng = ng,
+                           neg = neg,
                            method = "BFGS",
                            control = list(fnscale = -1,
                                           trace = 1),
                            hessian = TRUE)
-            mles = result$par[1:(length(result$par)-1)]
-            sigma = sqrt(exp(result$par[(length(result$par))]))
+            mles = result$par[1:(length(result$par) - 1)]
+            nparam = length(mles)
+            sigma = sqrt(exp(result$par[(nparam+1)]))
+
             if(ll){
                 return(list(result$value, c(mles,sigma)))
             }else if(hessian){
@@ -60,118 +86,86 @@ epsfullloglikmaxint = function(data,ng,interactind = list(NA),hwe = FALSE,
             ###############################################################
             # MAF unknown
             ###############################################################
-            len = dim(alldata)[2]
-            data_cc = alldata[!is.na(alldata[,len]),]
-            y = data_cc[,1]
-            x = as.matrix(data_cc[,2:len])
-            init = lm(y ~ x)
-            mafinit = rep(0.2,ng)
-            a.init = c(init$coef,log(summary(init)$sigma^2),
-                       log(mafinit/(1-mafinit)))
+            probinit = rep(0.2,ng)
+            a.init = c(init$coef,log(summary(init)$sigma^2),log(probinit/(1-probinit)))
+
             result = optim(a.init,
                            epsfullloglikinthwe,
-                           data = data,
-                           ng = ng,
+                           y_cc = y_cc,
+                           y_ic = y_ic,
+                           x_cc = x_cc,
+                           x_ic = x_ic,
+                           g_cc = g_cc,
+                           xg_cc = xg_cc,
+                           n_cc = n_cc,
+                           n_ic = n_ic,
                            interactind = interactind,
-                           geneffect = geneffect,
+                           interactgenotypes = interactgenotypes,
+                           ng = ng,
+                           neg = neg,
                            method = "BFGS",
                            control = list(fnscale = -1,
                                           trace = 1),
                            hessian = TRUE)
+            mles = result$par[1:(length(result$par)-(2*ng) - 1)]
+            nparam = length(mles)
+            sigma = sqrt(exp(result$par[(nparam+1)]))
+            m = result$par[(nparam+2):(length(result$par))]
+            maf = exp(m)/(1+exp(m))
 
-            mles = result$par[1:(length(result$par)-ng - 1)]
-            sigma = sqrt(exp(result$par[(length(result$par)-ng)]))
-            ind = length(result$par)-ng
-            mafs = exp(result$par[(ind + 1):(length(result$par))])/
-                (1+exp(result$par[(ind + 1):(length(result$par))]))
             if(ll){
-                return(list(result$value, c(mles,sigma,mafs)))
+                return(list(result$value, c(mles,sigma)))
             }else if(hessian){
-                return(list(result$hessian,c(mles,sigma,mafs)))
+                return(list(result$hessian,c(mles,sigma,maf)))
             }else{
-                return(c(mles,sigma,mafs))
+                return(c(mles,sigma,maf))
             }
         }
     }else{
         ###############################################################
         # Hardy-Weinberg not assumed
         ###############################################################
-        len = dim(alldata)[2]
-        data_cc = alldata[!is.na(alldata[,len]),]
-        y = data_cc[,1]
-        x = as.matrix(data_cc[,2:len])
-        init = lm(y ~ x)
-        if(geneffect == "additive"){
-#             count = 1
-#             probinit = c()
-#             for(c in 1:ng){
-#                 probinit[count] = log(0.2/(1-0.2))
-#                 probinit[count+1] = log(0.2/(1-probinit[count]-0.2))
-#             }
-            probinit = rep(0.2,2*ng)
-            a.init = c(init$coef,log(summary(init)$sigma^2),
-                       log(probinit/(1-probinit)))
-            result = optim(a.init,
-                           epsfullloglikint,
-                           data = data,
-                           ng = ng,
-                           interactind = interactind,
-                           geneffect = geneffect,
-                           method = "BFGS",
-                           control = list(fnscale = -1,
-                                          trace = 1),
-                           hessian = TRUE)
-            mles = result$par[1:(length(result$par)-2*ng - 1)]
-            nparam = length(mles)
-            sigma = sqrt(exp(result$par[(nparam+1)]))
-            probabilities = c()
-            count = nparam + 2
-            count2 = 1
-            for(r in 1:(ng)){
-                probabilities[count2] = exp(result$par[count])/
-                    (1+exp(result$par[count]))
-                probabilities[count2+1] = (1-probabilities[count2])*
-                    exp(result$par[count+1])/(1+exp(result$par[count+1]))
-                probabilities[count2+2] = 1 - probabilities[count2] -
-                    probabilities[count2+1]
-                count2 = count2 + 3
-                count = count + 2
-            }
-        }else{
-            probinit = rep(0.2,ng)
-            a.init = c(init$coef,log(summary(init)$sigma^2),
-                       log(probinit/(1-probinit)))
-            result = optim(a.init,
-                           epsfullloglikint,
-                           data = data,
-                           ng = ng,
-                           interactind = interactind,
-                           geneffect = geneffect,
-                           method = "BFGS",
-                           control = list(fnscale = -1,
-                                          trace = 1),
-                           hessian = TRUE)
-            mles = result$par[1:(length(result$par)-ng - 1)]
-            nparam = length(mles)
-            sigma = sqrt(exp(result$par[(nparam+1)]))
-            probabilities = c()
-            count = nparam + 2
-            count2 = 1
-            for(r in 1:(ng)){
-                probabilities[count2] = exp(result$par[count])/
-                    (1+exp(result$par[count]))
-                probabilities[count2+1] = 1 - exp(result$par[count])/
-                    (1+exp(result$par[count]))
-                count2 = count2 + 2
-                count = count + 1
-            }
+        nug = dim(unique(g_cc))[1]
+
+        probinit = rep(1/(nug+1),(nug-1))
+        a.init = c(init$coef,log(summary(init)$sigma^2),log(probinit/(1-probinit)))
+
+        result = optim(a.init,
+                       epsfullloglikint,
+                       y_cc = y_cc,
+                       y_ic = y_ic,
+                       x_cc = x_cc,
+                       x_ic = x_ic,
+                       g_cc = g_cc,
+                       xg_cc = xg_cc,
+                       n_cc = n_cc,
+                       n_ic = n_ic,
+                       genotypes = genotypes,
+                       interactind = interactind,
+                       interactgenotypes = interactgenotypes,
+                       ng = ng,
+                       neg = neg,
+                       method = "BFGS",
+                       control = list(fnscale = -1,
+                                      trace = 1),
+                       hessian = TRUE)
+        mles = result$par[1:(length(result$par)-(nug-1) - 1)]
+        nparam = length(mles)
+        sigma = sqrt(exp(result$par[(nparam+1)]))
+        m = result$par[(nparam+2):(length(result$par))]
+        probs = c()
+        probs[1] = exp(m[1])/(1+exp(m[1]))
+        for(k in 2:(nug-1)){
+            probs[k] = (1-sum(probs))*exp(m[k])/(1+exp(m[k]))
         }
+        gfreqs = c(probs,1-sum(probs))
+
         if(ll){
-            return(list(result$value, c(mles,sigma)))
+            return(list(result$value, c(mles,sigma),gfreqs))
         }else if(hessian){
-            return(list(result$hessian,c(mles,sigma,probabilities)))
+            return(list(result$hessian,c(mles,sigma),gfreqs,genotypes))
         }else{
-            return(c(mles,sigma,probabilities))
+            return(c(mles,sigma,gfreqs))
         }
     }
 }

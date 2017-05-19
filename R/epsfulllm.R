@@ -6,8 +6,6 @@
 #' @param hwe \code{TRUE} if Hardy-Weinberg equilibrium is assumed, default
 #' set to \code{FALSE}
 #' @param maf optional value for the minor allele frequencies under HWE
-#' @param gfreq frequencies of genotypes for each SNP if known or
-#' otherwise estimated
 #' @param confounder \code{TRUE} if distribution of SNPs should be
 #' assumed dependent on other (non-genetic) covariates,
 #' default set to \code{FALSE}
@@ -78,7 +76,7 @@
 #' epsfull.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
 #'
 
-epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
+epsAC.lm = function(formula, hwe = FALSE, maf,
                       confounder = FALSE, cx){
 
     if(class(formula)!="formula"){
@@ -89,10 +87,8 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
         covariates = as.matrix(model.matrix(formula)[,-1])
     options(na.action="na.omit")
 
-    if(dim(covariates)[2]==1){
-        covnames = colnames(epsdata)[2]
-        }else{
-        covnames = colnames(covariates)
+    if(dim(covariates)[2]==1){covnames = colnames(epsdata)[2]
+        }else{covnames = colnames(covariates)
     }
 
     n = dim(epsdata)[1]
@@ -176,7 +172,6 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
     if(hwe & missing(maf)){
         maf = NA
     }
-    if(missing(gfreq)){gfreq = NA}
 
     if(confounder & isxe){
         if(hwe){stop("Confounders and Hardy-Weinberg equilibrium not allowed simultaneously")}
@@ -194,8 +189,6 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
             }
         }
     }
-
-    geneffect = "additive"
 
     # Model variations
 
@@ -241,7 +234,6 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                     data = cbind(y,xg)
                     ng = dim(as.matrix(xg))[2]
                     model = epsfullloglikmax(data, ng, hwe = TRUE, maf = maf,
-                                             geneffect = "additive",
                                              hessian = TRUE)
                     hessian = model[[1]]
                     info = -1*ginv(hessian)
@@ -269,7 +261,6 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                     data = cbind(y,xg)
                     ng = dim(as.matrix(xg))[2]
                     model = epsfullloglikmax(data, ng, hwe = TRUE,
-                                             geneffect = "additive",
                                              hessian = TRUE)
                     params = model[[2]]
                     nparam = 1 + ng
@@ -308,7 +299,6 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequencies: ", toString(maf),sep = ""))
                     model = epsfullloglikmax(data,ng, hwe = TRUE, maf = maf,
-                                             geneffect = "additive",
                                              hessian = TRUE)
                     params = model[[2]]
                     nparam = 1 + ne + ng
@@ -335,7 +325,6 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
                     model = epsfullloglikmax(data, ng, hwe = TRUE,
-                                             geneffect = "additive",
                                              hessian = TRUE)
                     params = model[[2]]
                     nparam = 1 + ne + ng
@@ -380,7 +369,6 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                 message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
                 model = epsfullloglikmaxint(data, ng, interactind,
                                             hwe = TRUE, maf = maf,
-                                            geneffect = "additive",
                                             hessian = TRUE)
                 params = model[[2]]
                 nparam = 1 + ne + ng + length(interactind)
@@ -407,7 +395,6 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                 message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
                 model = epsfullloglikmaxint(data, ng, interactind,
                                             hwe = TRUE,
-                                            geneffect = "additive",
                                             hessian = TRUE)
                 params = model[[2]]
                 nparam = 1 + ne + ng + length(interactind)
@@ -444,13 +431,10 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                 ###############################################################
                 data = cbind(y,xg)
                 ng = dim(as.matrix(xg))[2]
-                model = epsfullloglikmax(data, ng, gfreq = gfreq,
-                                         geneffect = geneffect,
-                                         hessian = TRUE)
+                model = epsfullloglikmax(data,ng,hessian = TRUE)
                 params = model[[2]]
                 nparam = 1 + ng
                 sigma = params[(nparam + 1)]
-                probs = params[(nparam + 2):length(params)]
                 hessian = model[[1]]
                 info = -1*ginv(hessian)
                 coef = c()
@@ -460,11 +444,15 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ci[i,1] = params[i] - 1.96*(sqrt(info[i,i]))
                     ci[i,2] = params[i] + 1.96*(sqrt(info[i,i]))
                 }
+                gfreqs = model[[3]]
+                genotypes = model[[4]]
+                resg = data.frame(cbind(gfreqs,genotypes),row.names = NULL)
+                colnames(resg) = c("P(Xg)",covnames[snpid])
                 colnames(ci) = c("lower 95% ci", "upper 95% ci")
                 names(coef) = c("(intercept)",newnames)
                 rownames(ci) = c("(intercept)",newnames)
-                result = list(coef,ci,sigma,probs)
-                names(result) = c("coefficients","ci","sigma","P(Xg)")
+                result = list(coef,ci,sigma,resg)
+                names(result) = c("coefficients","ci","sigma","Xg")
                 return(result)
             }else{
                 ###############################################################
@@ -479,11 +467,7 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ###########################################################
                     # 2.1.1: No confounders
                     ###########################################################
-                    model = epsfullloglikmax(data, ng,
-                                             gfreq = gfreq,
-                                             geneffect = "additive",
-                                             hessian = TRUE)
-
+                    model = epsfullloglikmax(data, ng,hessian = TRUE)
                     params = model[[2]]
                     nparam = 1 + ne + ng # alpha, betae, betag
                     sigma = params[(nparam + 1)]
@@ -496,20 +480,22 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                         ci[i,1] = params[i] - 1.96*(sqrt(info[i,i]))
                         ci[i,2] = params[i] + 1.96*(sqrt(info[i,i]))
                     }
+                    gfreqs = model[[3]]
+                    genotypes = model[[4]]
+                    resg = data.frame(cbind(gfreqs,genotypes),row.names = NULL)
+                    colnames(resg) = c("P(Xg)",covnames[snpid])
                     colnames(ci) = c("lower 95% ci", "upper 95% ci")
-                    names(coef) = c("(intercept)",
-                                    newnames)
-                    rownames(ci) = c("(intercept)",
-                                     newnames)
-                    result = list(coef,ci,sigma)
-                    names(result) = c("coefficients","ci","sigma")
+                    names(coef) = c("(intercept)",newnames)
+                    rownames(ci) = c("(intercept)",newnames)
+                    result = list(coef,ci,sigma,resg)
+                    names(result) = c("coefficients","ci","sigma","Xg")
                     return(result)
                 }else{
                     #########################################################
                     # 2.1.1: Confounders
                     #########################################################
                     model = epsfullloglikmaxcond(data, ng,cind = cind,
-                                                 hessian = TRUE)
+                                                 hessian = TRUE,snpnames=covnames[snpid])
                     params = model[[2]]
                     nparam = 1 + ne + ng
                     sigma = params[(nparam + 1)]
@@ -523,13 +509,14 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                         ci[i,1] = params[i] - 1.96*(sqrt(info[i,i]))
                         ci[i,2] = params[i] + 1.96*(sqrt(info[i,i]))
                     }
+                    resg = model[[3]]
                     colnames(ci) = c("lower 95% ci", "upper 95% ci")
                     names(coef) = c("(intercept)",
                                     newnames)
                     rownames(ci) = c("(intercept)",
                                      newnames)
-                    result = list(coef,ci,sigma)
-                    names(result) = c("coefficients","ci","sigma")
+                    result = list(coef,ci,sigma,resg)
+                    names(result) = c("coefficients","ci","sigma","Xg")
                     return(result)
                 }
             }
@@ -551,8 +538,7 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                 ###############################################################
                 # 2.1.1: No confounders
                 ###############################################################
-                model = epsfullloglikmaxint(data, ng, interactind = interactind,
-                                            geneffect = geneffect, hessian = TRUE)
+                model = epsfullloglikmaxint(data, ng, interactind = interactind,hessian = TRUE)
                 params = model[[2]]
                 nparam = 1 + ne + ng + length(interactind)
                 sigma = params[(nparam + 1)]
@@ -565,22 +551,23 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ci[i,1] = params[i] - 1.96*(sqrt(info[i,i]))
                     ci[i,2] = params[i] + 1.96*(sqrt(info[i,i]))
                 }
+                gfreqs = model[[3]]
+                genotypes = model[[4]]
+                resg = data.frame(cbind(gfreqs,genotypes),row.names = NULL)
+                colnames(resg) = c("P(Xg)",covnames[snpid])
                 colnames(ci) = c("lower 95% ci", "upper 95% ci")
-                names(coef) = c("(intercept)",
-                                newnames)
-                rownames(ci) = c("(intercept)",
-                                 newnames)
-                result = list(coef,ci,sigma)
-                names(result) = c("coefficients","ci","sigma")
+                names(coef) = c("(intercept)",newnames)
+                rownames(ci) = c("(intercept)",newnames)
+                result = list(coef,ci,sigma,resg)
+                names(result) = c("coefficients","ci","sigma","Xg")
                 return(result)
             }else{
                 ###############################################################
                 # 2.1.1: Confounders
                 ###############################################################
-                model = epsfullloglikmaxcondint(data, ng,
-                                                cind = cind,
+                model = epsfullloglikmaxcondint(data, ng, cind = cind,
                                                 interactind = interactind,
-                                                hessian = TRUE)
+                                                hessian = TRUE,snpnames=covnames[snpid])
                 params = model[[2]]
                 nparam = 1 + ne + ng + length(interactind)
                 sigma = params[(nparam + 1)]
@@ -593,13 +580,14 @@ epsfull.lm = function(formula, hwe = FALSE, maf, gfreq,
                     ci[i,1] = params[i] - 1.96*(sqrt(info[i,i]))
                     ci[i,2] = params[i] + 1.96*(sqrt(info[i,i]))
                 }
+                resg = model[[3]]
                 colnames(ci) = c("lower 95% ci", "upper 95% ci")
                 names(coef) = c("(intercept)",
                                 newnames)
                 rownames(ci) = c("(intercept)",
                                  newnames)
-                result = list(coef,ci,sigma)
-                names(result) = c("coefficients","ci","sigma")
+                result = list(coef,ci,sigma,resg)
+                names(result) = c("coefficients","ci","sigma","Xg")
                 return(result)
             }
         }

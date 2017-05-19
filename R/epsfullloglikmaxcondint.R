@@ -3,61 +3,94 @@
 
 
 epsfullloglikmaxcondint = function(data, ng, cind,interactind,
-                                ll = FALSE, hessian = FALSE){
-    y = data[,1]
-    xe = as.matrix(data[,2:(dim(data)[2]-ng)])
-    xg = as.matrix(data[,(dim(data)[2]-ng+1):(dim(data)[2])])
-    xeg = matrix(NA,ncol = length(interactind),nrow = dim(xe)[1])
+                                ll = FALSE, hessian = FALSE,snpnames){
 
-    for(i in 1:length(interactind)){
-        xeg[,i] = xe[,interactind[[i]][2]]*xg[,interactind[[i]][1]]
+    len = dim(data)[2]
+
+    neg = length(interactind)
+
+    data_cc = data[!is.na(data[,len]),]
+    data_ic = data[is.na(data[,len]),1:(len-ng)]
+
+    y_cc = data_cc[,1]
+    y_ic = data_ic[,1]
+    g_cc = as.matrix(data_cc[,(len-ng+1):len])
+    x_cc = as.matrix(data_cc[,2:(len-ng)])
+    x_ic = as.matrix(data_ic[,2:(len-ng)])
+    n_cc = length(y_cc)
+    n_ic = length(y_ic)
+
+    genotypes = unique(g_cc)
+    nug = dim(genotypes)[1]
+
+    xg_cc = matrix(NA,ncol = neg,nrow = n_cc)
+    for(i in 1:neg){
+        xg_cc[,i] = x_cc[,interactind[[i]][2]]*g_cc[,interactind[[i]][1]]
     }
-    alldata = cbind(data,xeg)
+    interactgenotypes = list()
+    for (i in 1:dim(genotypes)[1]){
+        interactgenotypes[[i]] = matrix(NA,ncol = length(interactind),nrow = n_ic)
+        for(j in 1:neg){
+            interactgenotypes[[i]][,j] = x_ic[,interactind[[j]][2]]*genotypes[i,interactind[[j]][1]]
+        }
+    }
 
-    len = dim(alldata)[2]
-    data_cc = alldata[!is.na(alldata[,len]),]
-    y = data_cc[,1]
-    x = as.matrix(data_cc[,2:len])
-    init = lm(y ~ x)
+    init = lm(y_cc ~ x_cc+g_cc+xg_cc)
 
-    xe = as.matrix(data_cc[,2:(len-ng)])
-    xg = as.matrix(data_cc[,(len-ng+1):len])
-    xu = as.matrix(unique(xe[,cind]))
+    xu = as.matrix(unique(x_ic[,cind]))
     nu = dim(xu)[1]
+
     # For each unique xe, two probabilities per genetic variant
-    nprob = 2*nu*ng
-    probinit = rep(0.2,nprob)
+    nprob = nu*(nug-1)
+
+    probinit = rep(1/(2*nprob),nprob)
     a.init = c(init$coef,log(summary(init)$sigma^2),log(probinit/(1-probinit)))
+
     result = optim(a.init,
                    epsfullloglikintcond,
-                   data = data,
+                   y_cc = y_cc,
+                   y_ic = y_ic,
+                   x_cc = x_cc,
+                   x_ic = x_ic,
+                   g_cc = g_cc,
+                   xg_cc = xg_cc,
+                   n_cc = n_cc,
+                   n_ic = n_ic,
+                   genotypes = genotypes,
                    ng = ng,
-                   interactind = interactind,
+                   xu=xu,
+                   nu = nu,
                    cind = cind,
+                   interactind = interactind,
+                   interactgenotypes = interactgenotypes,
+                   neg = neg,
                    method = "BFGS",
                    control = list(fnscale = -1,
                                   trace = 1),
                    hessian = TRUE)
-    ne = dim(xe)[2]
-    nparam = 1+ne+ng+length(interactind)
-    mles = result$par[1:nparam]
+    mles = result$par[1:(length(result$par)-(nprob) - 1)]
+    nparam = length(mles)
     sigma = sqrt(exp(result$par[(nparam+1)]))
-    probs = c()
-    count = nparam + 2
-    count2 = 1
-    for(r in 1:(nu*ng)){
-      probs[count2] = exp(result$par[count])/(1+exp(result$par[count]))
-      probs[count2+1] = (1-probs[count2])*exp(result$par[count+1])/
-          (1+exp(result$par[count+1]))
-      probs[count2+2] = 1 - probs[count2] - probs[count2+1]
-      count2 = count2 + 3
-      count = count + 2
+    m = result$par[(nparam+2):(length(result$par))]
+
+    allgenoprobs = list()
+    for(i in 1:nu){
+        mtemp = m[1:(dim(genotypes)[1]-1)]
+        m = m[dim(genotypes)[1]:length(m)]
+        nug = length(mtemp)+1
+        probs = c()
+        probs[1] = exp(mtemp[1])/(1+exp(mtemp[1]))
+        for(k in 2:(nug-1)){
+            probs[k] = (1-sum(probs))*exp(mtemp[k])/(1+exp(mtemp[k]))
+        }
+        allgenoprobs[[i]] = cbind(c(probs,1-sum(probs)),genotypes)
+        colnames(allgenoprobs[[i]]) = c(paste0("P(Xg|Xe=",paste(xu[i,],collapse = "-"),")"),snpnames)
     }
     if(ll){
-      return(list(result$value, c(mles,sigma)))
+        return(list(result$value, c(mles,sigma),allgenoprobs))
     }else if(hessian){
-      return(list(result$hessian,c(mles,sigma)))
+        return(list(result$hessian,c(mles,sigma),allgenoprobs))
     }else{
-      return(c(mles,sigma,probs))
+        return(c(mles,sigma))
     }
 }

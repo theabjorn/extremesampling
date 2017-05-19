@@ -174,7 +174,6 @@ epsfull.testGE = function(nullmodel, GE, onebyone = TRUE,
                 #######################################################
                 if(missing(maf)){maf = NA}
                 fit0 = epsfullloglikmax(data,ng, hwe = TRUE, maf = maf,
-                                        geneffect = geneffect,
                                         ll = TRUE)[[1]]
                 for(l in 1:nint){
                     fit1 = epsfullloglikmaxint(data,ng = ng,
@@ -196,7 +195,6 @@ epsfull.testGE = function(nullmodel, GE, onebyone = TRUE,
                 # Hardy Weinberg not assumed
                 #######################################################
                 fit0 = epsfullloglikmax(data,ng,
-                                        geneffect = geneffect,
                                         ll = TRUE)[[1]]
                 for(l in 1:nint){
                     fit1 = epsfullloglikmaxint(data,ng = ng,
@@ -242,7 +240,6 @@ epsfull.testGE = function(nullmodel, GE, onebyone = TRUE,
             #######################################################
             if(missing(maf)){maf = NA}
             fit0 = epsfullloglikmax(data,ng, hwe = TRUE, maf = maf,
-                                    geneffect = geneffect,
                                     ll = TRUE)[[1]]
 
             fit1 = epsfullloglikmaxint(data,ng = ng,
@@ -260,7 +257,6 @@ epsfull.testGE = function(nullmodel, GE, onebyone = TRUE,
             # Hardy Weinberg not assumed
             #######################################################
             fit0 = epsfullloglikmax(data,ng,
-                                    geneffect = geneffect,
                                     ll = TRUE)[[1]]
 
             fit1 = epsfullloglikmaxint(data,ng = ng,

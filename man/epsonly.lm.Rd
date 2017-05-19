@@ -4,7 +4,7 @@
 \alias{epsonly.lm}
 \title{Fit linear model to EPS-only data}
 \usage{
-epsonly.lm(formula, cutoffs)
+epsonly.lm(formula, cutoffs, randomindex)
 }
 \arguments{
 \item{formula}{an object of class \code{\link[stats]{formula}}, that
@@ -12,6 +12,9 @@ describes the linear regression model to be fitted, see details}
 
 \item{cutoffs}{a vector \code{c(l,u)} of the lower and upper cut-offs used
 for extreme sampling}
+
+\item{randomindex}{a vector which indicates if observations are from a random
+or extreme sample}
 }
 \value{
 Maximum likelihood estimates of the model parameters,

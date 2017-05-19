@@ -4,17 +4,20 @@
 \alias{epsonly.testGE}
 \title{Test gene-environment interactions in the EPS-only design}
 \usage{
-epsonly.testGE(nullmodel, GE, cutoffs, onebyone = TRUE)
+epsonly.testGE(nullmodel, GE, cutoffs, randomindex, onebyone = TRUE)
 }
 \arguments{
 \item{nullmodel}{an object of class \code{\link[stats]{formula}}, that
 describes the linear regression model under the null hypothesis}
 
-\item{GE}{a list of interactions, with the colon-symbol used to denote
+\item{GE}{a vector of interactions, with the colon-symbol used to denote
 interaction, e.g. \code{c("xe1:xg1","xe1:xg2")}}
 
 \item{cutoffs}{a vector \code{c(l,u)} of the lower and upper cut-offs used
 for extreme sampling}
+
+\item{randomindex}{a vector which indicates if observations are from a random
+or extreme sample}
 
 \item{onebyone}{\code{TRUE} if interactions should be tested one by one
 for inclusion in the model, default \code{TRUE}}
