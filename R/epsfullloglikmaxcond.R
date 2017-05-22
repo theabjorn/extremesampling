@@ -4,6 +4,11 @@
 
 epsfullloglikmaxcond = function(data, ng, cind, ll = FALSE, hessian = FALSE,snpnames){
 
+    if(missing(snpnames)){
+        gs = 1:ng
+        snpnames = paste0("snp",gs)
+    }
+
     len = dim(data)[2]
 
     data_cc = data[!is.na(data[,len]),]

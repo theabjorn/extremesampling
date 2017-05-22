@@ -63,7 +63,7 @@
 #' epsfull.test(y~xe1+xe2,SNP = xg)$p.value
 #' epsfull.test(y~xe,SNP = xg,onebyone=FALSE)$p.value
 
-epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
+epsAC.test = function(nullmodel, SNP, onebyone = TRUE,
                         confounder = FALSE, cx){
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
@@ -153,7 +153,7 @@ epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
                 varg = var(g)
                 egg = mean(g*g)
 
-                I11 = cbind(c(n,colSums(xe),2*sum(y-alpha-xe%*%beta)/sigma),
+                I11 = cbind(c(n,colSums(xe),2*sum(y-alpha-c(xe%*%beta))/sigma),
                             rbind(colSums(xe),t(xe)%*%xe,
                                   2*(t(y-alpha-xe%*%beta)%*%xe)/sigma),
                             rbind(2*sum(y-alpha-xe%*%beta)/sigma,
