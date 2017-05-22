@@ -166,18 +166,15 @@ epsAC.testGE = function(nullmodel, GE,confounder = FALSE, cx, hwe = FALSE, maf,l
         nug = dim(genotypes)[1]
 
         if(confounder){
-            ux = as.matrix(unique(x_cc[,cind]))
+            ux = as.matrix(unique(x_ic[,cind]))
             nu = dim(ux)[1]
             if(nu != dim(as.matrix(unique(xe[,cind])))[1]){
                 warning("All unique levels of confounder not found in extreme sample")
             }
             uindex = list()
-            for(u in 1:nu){
-                uindex[[u]] = colSums((data.frame(t(x_ic[,cind])) == t(ux[u,])))
-            }
-
             uindex_cc = list()
             for(u in 1:nu){
+                uindex[[u]] = colSums((data.frame(t(x_ic[,cind])) == t(ux[u,])))
                 uindex_cc[[u]] = colSums((data.frame(t(x_cc[,cind])) == t(ux[u,])))
             }
         }
@@ -374,8 +371,6 @@ epsAC.testGE = function(nullmodel, GE,confounder = FALSE, cx, hwe = FALSE, maf,l
 
                         Sigma = (I22 - t(I12)%*%ginv(I11)%*%I12)
 
-                        (I22old - t(I12old)%*%ginv(I11old)%*%I12old)
-
                         s = (sum((y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG)*eg) +
                                  sum(x_ic[,xint]*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs)))/sigma2
                         t = (s*s)/Sigma
@@ -555,7 +550,7 @@ epsAC.testGE = function(nullmodel, GE,confounder = FALSE, cx, hwe = FALSE, maf,l
                         I_66 = matrix(0,ncol=nu*(dim(genotypes)[1]-1),nrow = nu*(dim(genotypes)[1]-1))
                         mati = 1
                         for(u in 1:nu){
-                            cg_cc = as.matrix(g_cc[uindex_cc[[u]],])
+                            cg_cc = as.matrix(g_cc[(uindex_cc[[u]]==1),])
                             cgenoprobs = genoprobs[[u]][,1]
                             t_66 = matrix(sum(as.vector(rowSums(cg_cc - matrix(genotypes[mp,],ncol = dim(cg_cc)[2],nrow=dim(cg_cc)[1])))==0)/(cgenoprobs[mp]^2),ncol=(dim(genotypes)[1]-1),nrow=(dim(genotypes)[1]-1))
 

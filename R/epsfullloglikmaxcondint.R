@@ -4,6 +4,10 @@
 
 epsfullloglikmaxcondint = function(data, ng, cind,interactind,
                                 ll = FALSE, hessian = FALSE,snpnames){
+    if(missing(snpnames)){
+        gs = 1:ng
+        snpnames = paste0("snp",gs)
+    }
 
     len = dim(data)[2]
 

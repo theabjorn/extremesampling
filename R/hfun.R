@@ -64,7 +64,7 @@ hfun2 = function(y,xe,alpha,betaE,betaG,sigma,a,c,gint,genotypes,genoprobs){
         for(k in 1:(dim(genotypes)[2]*dim(genotypes)[2])){
             tmp[,k] = tmp[,k] + ((fi^a)*dnorm(fi/sigma)*genoprobs[j]*(genotypes[j,gint]^c))*(as.vector(t(c(genotypes[j,]%*%t(genotypes[j,]))))[k])
         }
-        tmp2 = tmp2 + dnorm(fi/sigma)*genoprobs[i]
+        tmp2 = tmp2 + dnorm(fi/sigma)*genoprobs[j]
     }
     res = (apply(tmp, 2, "/", tmp2))
     return(res)
@@ -77,7 +77,7 @@ chfun0 = function(y,xe,alpha,betaE,betaG,sigma,a,c,gint,genotypes,genoprobs,uind
     tmp2 = rep(0,length(y))
     for(u in 1:nu){
         cy = y[(uindex[[u]]==1)]
-        cxe = xe[(uindex[[u]]==1),]
+        cxe = as.matrix(xe[(uindex[[u]]==1),])
         cgenoprobs = genoprobs[[u]][,1]
         for (i in 1:dim(genotypes)[1]){
             fi = cy - alpha - cxe%*%betaE - c(t(genotypes[i,])%*%betaG)
@@ -95,14 +95,14 @@ chfun0dash = function(y,xe,alpha,betaE,betaG,sigma,a,c,gint,genotypes,genoprobs,
     mk = dim(genotypes)[1]
     fmk = y - alpha - xe%*%betaE - c(t(genotypes[mk,])%*%betaG)
 
-    tmp = (fk^a)*dnorm(fk/sigma)*(genotypes[k,gint]^c)*genotypes[k,] - (fmk^a)*dnorm(fmk/sigma)*(genotypes[mk,gint]^c)*genotypes[mk,]
+    tmp = (fk^a)*dnorm(fk/sigma)*(genotypes[k,gint]^c) - (fmk^a)*dnorm(fmk/sigma)*(genotypes[mk,gint]^c)
 
     tmp[(uindex[[u1]]==0)] = 0
 
     tmp2 = rep(0,length(y))
     for(u in 1:nu){
         cy = y[(uindex[[u]]==1)]
-        cxe = xe[(uindex[[u]]==1),]
+        cxe = as.matrix(xe[(uindex[[u]]==1),])
         cgenoprobs = genoprobs[[u]][,1]
         for (i in 1:dim(genotypes)[1]){
             fi = cy - alpha - cxe%*%betaE - c(t(genotypes[i,])%*%betaG)
@@ -126,7 +126,7 @@ chfun1dash = function(y,xe,alpha,betaE,betaG,sigma,a,c,gint,genotypes,genoprobs,
     tmp2 = rep(0,length(y))
     for(u in 1:nu){
         cy = y[(uindex[[u]]==1)]
-        cxe = xe[(uindex[[u]]==1),]
+        cxe = as.matrix(xe[(uindex[[u]]==1),])
         cgenoprobs = genoprobs[[u]][,1]
         for (i in 1:dim(genotypes)[1]){
             fi = cy - alpha - cxe%*%betaE - c(t(genotypes[i,])%*%betaG)
@@ -143,7 +143,7 @@ chfun1 = function(y,xe,alpha,betaE,betaG,sigma,a,c,gint,genotypes,genoprobs,uind
     tmp2 = rep(0,length(y))
     for(u in 1:nu){
         cy = y[(uindex[[u]]==1)]
-        cxe = xe[(uindex[[u]]==1),]
+        cxe = as.matrix(xe[(uindex[[u]]==1),])
         cgenoprobs = genoprobs[[u]][,1]
         for (j in 1:dim(genotypes)[1]){
             fi = cy - alpha - cxe%*%betaE - c(t(genotypes[j,])%*%betaG)
@@ -165,7 +165,7 @@ chfun2 = function(y,xe,alpha,betaE,betaG,sigma,a,c,gint,genotypes,genoprobs,uind
     tmp2 = rep(0,length(y))
     for(u in 1:nu){
         cy = y[(uindex[[u]]==1)]
-        cxe = xe[(uindex[[u]]==1),]
+        cxe = as.matrix(xe[(uindex[[u]]==1),])
         cgenoprobs = genoprobs[[u]][,1]
         for (j in 1:dim(genotypes)[1]){
             fi = cy - alpha - cxe%*%betaE - c(t(genotypes[j,])%*%betaG)
