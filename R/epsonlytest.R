@@ -619,16 +619,16 @@ epsonly.test = function(nullmodel,SNP,cutoffs,randomindex,onebyone = TRUE){
                 I11_11 = nr + ne*a
 
                 I11_33 = -nr + 3*sum(f_r^2)/sigma2 + 3*sum(f_e^2)/sigma2 + ne*c
-                I11_31 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
-                I11_13 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + sum(b)
+                I11_31 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + ne*b
+                I11_13 = 2*sum(f_r)/sigma + 2*sum(f_e)/sigma + ne*b
 
                 I11 = cbind(rbind(I11_11,I11_31),
                             rbind(I11_13,I11_33))
 
                 I22 = t(g_r)%*%g_r +  a*t(g_e)%*%g_e
 
-                I21_1 = t(t(colSums(g_r))) + a*t(t(colSums(g_r)))
-                I21_3 = 2*t(t(f_r)%*%g_r) + 2*t(t(f_e)%*%g_e)/sigma + b*t(t(colSums(g_r)))
+                I21_1 = t(t(colSums(g_r))) + a*t(t(colSums(g_e)))
+                I21_3 = 2*t(t(f_r)%*%g_r) + 2*t(t(f_e)%*%g_e)/sigma + b*t(t(colSums(g_e)))
                 I21 = cbind(I21_1,I21_3)
                 I12 = t(I21)
 
