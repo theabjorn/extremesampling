@@ -2,6 +2,8 @@
 
 export(epsAC.lm)
 export(epsAC.test)
+export(epsAC.rv.test)
+export(epsfull.test)
 export(epsAC.testGE)
 export(epsCC.rv.test)
 export(epsCC.test)

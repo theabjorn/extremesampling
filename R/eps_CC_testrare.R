@@ -95,9 +95,9 @@ epsCC.rv.test = function(nullmodel,RV,cutoffs,randomindex,method = "naive",weigh
     if(method == "naive"){
         epsCC.rv.test.naive(epsdata0,covariates0,RV,isx,l,u,rsample, randomindex)
     }else if(method == "burden"){
-        g = rep(0,dim(RV)[2])
+        g = rep(0,dim(RV)[1])
         for(c in 1:dim(RV)[2]){
-            g = g + weights[c]*RV[,c]
+            g = g + c(weights[c])*c(RV[,c])
         }
         epsCC.test(nullmodel,SNP=g,cutoffs,randomindex)
     }else if(method == "lmm"){

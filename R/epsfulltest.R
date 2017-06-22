@@ -63,7 +63,7 @@
 #' epsfull.test(y~xe1+xe2,SNP = xg)$p.value
 #' epsfull.test(y~xe,SNP = xg,onebyone=FALSE)$p.value
 
-epsAC.test = function(nullmodel, SNP, onebyone = TRUE,
+epsfull.test = function(nullmodel, SNP, onebyone = TRUE,
                         confounder = FALSE, cx){
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
