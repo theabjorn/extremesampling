@@ -11,7 +11,7 @@
 #' @details
 #' nanana
 #'
-#' @import MASS stats expm
+#' @import MASS stats
 #' @export
 #' @examples
 #' N = 5000 # Number of individuals in a population

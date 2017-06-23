@@ -195,7 +195,11 @@ epsAC.rv.test.lmm = function(epsdata0,covariates0,RV,isxe,confounder,cind,weight
         Sigma = sig1 + sig2
         s = (z[extreme]%*%g +sum(z[!extreme])*eg)/sigma2
 
-        sqrtSigma = sqrtm(Sigma)
+        Vmat = eigen(Sigma)$vectors
+        Dmat = t(Vmat)%*%Sigma%*%Vmat
+        Smat = diag(sqrt(diag(Dmat)))
+        sqrtSigma = Vmat%*%Smat%*%t(Vmat)
+
         eigenmat = sqrtSigma%*%Bmat%*%sqrtSigma
         d = eigen(eigenmat)$values
 
@@ -277,7 +281,10 @@ epsAC.rv.test.lmm = function(epsdata0,covariates0,RV,isxe,confounder,cind,weight
         s = s/sigma2
         Sigma = sig1 + sig2
 
-        sqrtSigma = sqrtm(Sigma)
+        Vmat = eigen(Sigma)$vectors
+        Dmat = t(Vmat)%*%Sigma%*%Vmat
+        Smat = diag(sqrt(diag(Dmat)))
+        sqrtSigma = Vmat%*%Smat%*%t(Vmat)
         eigenmat = sqrtSigma%*%Bmat%*%sqrtSigma
         d = eigen(eigenmat)$values
 
@@ -318,7 +325,10 @@ epsAC.rv.test.lmm = function(epsdata0,covariates0,RV,isxe,confounder,cind,weight
         Sigma = sig2
         s = (z[extreme]%*%g +sum(z[!extreme])*eg)/sigma2
 
-        sqrtSigma = sqrtm(Sigma)
+        Vmat = eigen(Sigma)$vectors
+        Dmat = t(Vmat)%*%Sigma%*%Vmat
+        Smat = diag(sqrt(diag(Dmat)))
+        sqrtSigma = Vmat%*%Smat%*%t(Vmat)
         eigenmat = sqrtSigma%*%Bmat%*%sqrtSigma
         d = eigen(eigenmat)$values
 

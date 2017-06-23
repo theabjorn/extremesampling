@@ -323,7 +323,10 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
             s = t(y-alpha - xbeta +sigma*h0)%*%g/sigma2
 
-            sqrtSigma = sqrtm(Sigma)
+            Vmat = eigen(Sigma)$vectors
+            Dmat = t(Vmat)%*%Sigma%*%Vmat
+            Smat = diag(sqrt(diag(Dmat)))
+            sqrtSigma = Vmat%*%Smat%*%t(Vmat)
             eigenmat = sqrtSigma%*%Bmat%*%sqrtSigma
             d = eigen(eigenmat)$values
 
@@ -363,7 +366,10 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             Sigma = (a/sigma2)*t(g)%*%(I-H)%*%g
             s = t(y-mean(y))%*%g/sigma2
 
-            sqrtSigma = sqrtm(Sigma)
+            Vmat = eigen(Sigma)$vectors
+            Dmat = t(Vmat)%*%Sigma%*%Vmat
+            Smat = diag(sqrt(diag(Dmat)))
+            sqrtSigma = Vmat%*%Smat%*%t(Vmat)
             eigenmat = sqrtSigma%*%Bmat%*%sqrtSigma
             d = eigen(eigenmat)$values
 
@@ -459,7 +465,10 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
             s = t(y_r-alpha - x_r%*%beta)%*%gr/sigma2 + t(y_e-alpha - xbeta +sigma*h0)%*%ge/sigma2
 
-            sqrtSigma = sqrtm(Sigma)
+            Vmat = eigen(Sigma)$vectors
+            Dmat = t(Vmat)%*%Sigma%*%Vmat
+            Smat = diag(sqrt(diag(Dmat)))
+            sqrtSigma = Vmat%*%Smat%*%t(Vmat)
             eigenmat = sqrtSigma%*%Bmat%*%sqrtSigma
             d = eigen(eigenmat)$values
 
@@ -502,7 +511,10 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             Sigma = (a2/sigma2)*t(g)%*%(I-H)%*%g
             s = t(y-mean(y))%*%g/sigma2
 
-            sqrtSigma = sqrtm(Sigma)
+            Vmat = eigen(Sigma)$vectors
+            Dmat = t(Vmat)%*%Sigma%*%Vmat
+            Smat = diag(sqrt(diag(Dmat)))
+            sqrtSigma = Vmat%*%Smat%*%t(Vmat)
             eigenmat = sqrtSigma%*%Bmat%*%sqrtSigma
             d = eigen(eigenmat)$values
 
