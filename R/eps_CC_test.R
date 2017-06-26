@@ -343,6 +343,7 @@ epsCC.test = function(nullmodel,SNP,cutoffs,randomindex){
             ##############################################################
             # No covariates present in the null model
             ##############################################################
+            y = epsdata0[,1]
             fit = epsCC.loglikmax(as.matrix(y),c(l,u),randomindex) # Fit under H0
             alpha = fit[1]
             sigma = fit[length(fit)]
