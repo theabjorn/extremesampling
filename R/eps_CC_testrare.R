@@ -84,9 +84,9 @@ epsCC.rv.test = function(nullmodel,RV,cutoffs,randomindex,method = "naive",weigh
     u = max(cutoffs)
 
     RV = as.matrix(RV)
-    if(dim(RV)[2]<2){
-        error("RV must be a set of more than one genetic variant")
-    }
+    # if(dim(RV)[2]<2){
+    #     stop("RV must be a set of more than one genetic variant")
+    # }
 
     if(missing(weights)){
         weights = rep(1,dim(RV)[2])

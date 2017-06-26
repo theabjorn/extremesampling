@@ -343,7 +343,7 @@ epsCC.test = function(nullmodel,SNP,cutoffs,randomindex){
             ##############################################################
             # No covariates present in the null model
             ##############################################################
-            fit = epsonlyloglikmax(as.matrix(y),c(l,u),randomindex) # Fit under H0
+            fit = epsCC.loglikmax(as.matrix(y),c(l,u),randomindex) # Fit under H0
             alpha = fit[1]
             sigma = fit[length(fit)]
             sigma2 = sigma*sigma
@@ -386,7 +386,7 @@ epsCC.test = function(nullmodel,SNP,cutoffs,randomindex){
                 I12 = t(I21)
 
                 Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-                s = t(gri)%*%(y_r-alpha)/sigma2 + t(gei)%*%(y_e-alpha+sigma*h0)/sigma2
+                s = t(gri)%*%(y_r-alpha)/sigma2 + t(gei)%*%(y_e-alpha+sigma*c(h0))/sigma2
 
                 t = s*s/Sigma
                 pval = pchisq(t,1,lower.tail=FALSE)
