@@ -133,7 +133,7 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
         ge =  g[randomindex ==0,]
         ng = dim(g)[2]
 
-        modeldata = epsdata0
+        modeldata = cbind(epsdata0[,1],covariates0)
 
         if(isx){
             ###############################################################
@@ -197,7 +197,7 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
             ##############################################################
             # No covariates present in the null model
             ##############################################################
-            fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
+            fit = epsCC.loglikmax(y,c(l,u),randomindex) # Fit under H0
             alpha = fit[1]
             sigma = fit[length(fit)]
             sigma2 = sigma*sigma
@@ -218,10 +218,9 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
             b = c(h0 - h2 - h0*h1)
 
             I11_11 = nr + a*ne
-
             I11_33 = ne*(c - 3*c(h1)) + 2*ne + 2*nr
-            I11_31 = ne*(b-2*c(h0))
-            I11_13 = t(I11_31)
+
+            I11_31 = sum(b-2*c(h0)); I11_13 = t(I11_31)
 
             I11 = cbind(rbind(I11_11,I11_31),
                         rbind(I11_13,I11_33))
@@ -229,9 +228,9 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
             I22 = t(gr)%*%gr + a*t(ge)%*%ge
 
             I21_1 = colSums(gr) + a*colSums(ge)
-            I21_3 = 2*t(gr)%*%f_r/sigma + 2*t(ge)%*%f_e/sigma + b*colSums(ge)
+            I21_3 = 2*t(gr)%*%f_r/sigma + 2*t(ge)%*%f_e/sigma + b*colSyms(ge)
 
-            I21 = cbind(I21_1,I21_3); I12 = t(I21)
+            I21 = cbind(I21_1,I21_2,I21_3); I12 = t(I21)
 
             Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
             s = t(y_r-alpha)%*%gr/sigma2 + t(y_e-alpha+sigma*h0)%*%ge/sigma2
