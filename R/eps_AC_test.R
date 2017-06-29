@@ -1,17 +1,18 @@
-#' @title Test for associations under the EPS-full design
+#' @title Score test EPS-CC
 #' @description
-#' \code{epsAC.test} performs a score test for genetic variables in
-#' the EPS-full design
+#' \code{epsCC.test} performs a score test for common genetic variants
+#' under the EPS all-case design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis, see details
-#' @param SNP a matrix of variables to be tested against the null
+#' @param SNP a matrix of variables to be tested against the null (NA for
+#' not genotyped individuals)
 #' @param confounder \code{TRUE} if distribution of SNPs should be
 #' assumed dependent on other (non-genetic) covariates,
 #' default set to \code{FALSE}
 #' @param cx optional vector of names of confounding (non-genetic) covariates
 #' @return \code{epsfull.test} returns
-#' \item{statistic}{the value of the score test statistic}
-#' \item{p.value}{the P-value for the test}
+#' \item{statistic}{the score test statistic}
+#' \item{p.value}{the P-value}
 #' @details
 #' The \code{nullmodel} \code{\link[stats]{formula}} object is of the type
 #' y~xe, which describes a regression model, y=a+be*xe+e
@@ -19,22 +20,19 @@
 #' xe is a non-genetic/environmental covariate (optional).
 #' The variables are taken from the environment that the
 #' function is called from.
-#' The test considers a regression model y=a+be*xe+bg*xg+e, where xg is a
-#' genetic covariate, and where bg=0 under the null hypothesis. The output
-#' of the function gives the test statistic and p-value for the test of
-#' H0: bg=0.
-#' The covariate \code{xg} is a SNP (single-nucleotide polymorphism).
-#' Both xe and xg can be matrices.
+#' The null hypothesis bg=0 is tested for the model y=a+be*xe+bg*xg+e.
+#' The covariate \code{xg} is a SNP (single-nucleotide polymorphism). If
+#' SNP is a matrix, each SNP (column) is tested against the null model.
 #'
-#' The EPS-full design is such that the SNP genotype is only observed
-#' for individuals with high and low values of the phenotype \code{y}.
-#' For remaining individuals, the unobserved genotype most be coded as NA.
-#' A SNP is assumed to have possible genotype 0, 1 or 2 according to the
-#' number of minor-alleles.
+#' For the EPS all-case design, the SNP genotypes are only observed
+#' for individuals with extreme values of the phenotype \code{y}, and possibly
+#' some random samples. For remaining individuals, the unobserved genotype
+#' must be coded as NA.
 #'
 #' If confounder = TRUE, the genetic variables are assumed to have
 #' different distribution for different levels of other (non-genetic)
 #' covariates, these can be specified by a vector of names \code{cx}.
+#'
 #' @import MASS stats
 #' @export
 #' @examples
@@ -53,12 +51,10 @@
 #' extreme = (y < l) | (y >= u)
 #' # Create the EPS-full data set by setting
 #' # the SNP values of non-extremes to NA
-#' xg1[!extreme] = NA
-#' xg2[!extreme] = NA
-#' xg = as.matrix(cbind(xg1,xg2))
+#' xg1[!extreme] = NA; xg2[!extreme] = NA; xg = as.matrix(cbind(xg1,xg2))
 #' xe = as.matrix(cbind(xe1,xe2))
-#' epsfull.test(y~xe1+xe2,SNP = xg)$p.value
-#' epsfull.test(y~xe,SNP = xg,onebyone=FALSE)$p.value
+#' # Testing
+#' epsAC.test(y~xe1+xe2,SNP = xg)$p.value
 
 epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
     if(class(nullmodel)!="formula"){

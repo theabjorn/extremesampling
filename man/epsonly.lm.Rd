@@ -73,4 +73,3 @@ epsonly.lm(y~xe1+xe2+xg1+xg2,cutoffs = c(l,u))
 epsonly.lm(y~xe+xg,cutoffs = c(l,u))
 epsonly.lm(y~xe1+xe2+xg1+xg2+xe2*xg1,cutoffs = c(l,u))$coefficients
 }
-

@@ -2,7 +2,7 @@
 % Please edit documentation in R/eps_CC_test.R
 \name{epsCC.test}
 \alias{epsCC.test}
-\title{Test for associations under the EPS complete-case design}
+\title{Score test EPS-CC}
 \usage{
 epsCC.test(nullmodel, SNP, cutoffs, randomindex)
 }
@@ -12,7 +12,7 @@ describes the linear regression model under the null hypothesis}
 
 \item{SNP}{a matrix of genetic variants to be tested against the null}
 
-\item{cutoffs}{a vector \code{c(l,u)} of the lower and upper cut-offs used
+\item{cutoffs}{a vector \code{(l,u)} of the lower and upper cut-off used
 for extreme sampling}
 
 \item{randomindex}{a binary vector that indicates if samples are random
@@ -35,14 +35,14 @@ xe is a non-genetic/environmental covariate (optional).
 The variables are taken from the environment that the
 function is called from.
 The null hypothesis bg=0 is tested for the model y=a+be*xe+bg*xg+e.
-The covariate \code{xg} is a SNP (single-nucleotide polymorphism).
-Both xe and xg can be matrices.
+The covariate \code{xg} is a SNP (single-nucleotide polymorphism). If
+SNP is a matrix, each SNP (column) is tested against the null model.
 
-The EPS complete-case design is such that data is only available
-for individuals with high and low values of the phenotype \code{y}, and
-potentialy some randomly sampled individuals. The cut-offs \code{l} and
-\code{u} that specify the sampling must be specified
-in the \code{cutoffs} argument.
+For the EPS complete-case design, the data is only available
+for individuals with high and low values of the phenotype \code{y};
+(\code{y < l} or \code{y > u}), and potentialy some randomly sampled
+individuals. The cut-offs \code{l} and \code{u} that specify the
+sampling must be given in the \code{cutoffs} argument.
 }
 \examples{
 N = 5000 # Number of individuals in a population
@@ -59,15 +59,10 @@ u = quantile(y,probs = 3/4,na.rm=TRUE)
 l = quantile(y,probs = 1/4,na.rm=TRUE)
 extreme = (y < l) | (y >= u)
 # Create the EPS-only data set
-y = y[extreme]
-xe1 = xe1[extreme]
-xe2 = xe2[extreme]
-xg1 = xg1[extreme]
-xg2 = xg2[extreme]
-xg = as.matrix(cbind(xg1,xg2))
-xe = as.matrix(cbind(xe1,xe2))
+y = y[extreme]; xe1 = xe1[extreme]; xe2 = xe2[extreme]
+xg1 = xg1[extreme]; xg2 = xg2[extreme]
+xg = as.matrix(cbind(xg1,xg2)); xe = as.matrix(cbind(xe1,xe2))
 
+# Testing
 epsCC.test(y~xe,SNP=xg,cutoffs = c(l,u))
-epsCC.test(y~xe,SNP=xg,cutoffs = c(l,u),onebyone = FALSE)
 }
-

@@ -122,15 +122,16 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
         # Extremes + random sample
         ###################################################################
         message("EPS complete-case analysis with random samples")
-
+        y = epsdata0[,1]
         y_r = epsdata0[,1][randomindex ==1]
         y_e = epsdata0[,1][randomindex ==0]
         nr = length(y_r)
         ne = length(y_e)
 
-        gr = as.matrix(as.matrix(RV)[randomindex ==1,])
-        ge = as.matrix(as.matrix(RV)[randomindex ==0,])
-        ng = dim(ge)[2]
+        g = as.matrix(RV)
+        gr = g[randomindex ==1,]
+        ge =  g[randomindex ==0,]
+        ng = dim(g)[2]
 
         modeldata = epsdata0
 
@@ -394,6 +395,7 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
         ###################################################################
         message("EPS complete-case analysis with random samples")
 
+        y = epsdata0[,1]
         y_r = epsdata0[,1][randomindex ==1]
         y_e = epsdata0[,1][randomindex ==0]
         nr = length(y_r)

@@ -90,4 +90,3 @@ epsfull.lm(y~xe1+xe2+xg1+xg2)
 epsfull.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
 
 }
-

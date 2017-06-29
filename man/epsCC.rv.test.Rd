@@ -70,4 +70,3 @@ xe = as.matrix(cbind(xe1,xe2))
 epsCC.test(y~xe,SNP=xg,cutoffs = c(l,u))
 epsCC.test(y~xe,SNP=xg,cutoffs = c(l,u),onebyone = FALSE)
 }
-

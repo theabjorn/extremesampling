@@ -82,4 +82,3 @@ xe = as.matrix(cbind(xe1,xe2))
 
 epsonly.testGE(y~xe1+xe2+xg1+xg2, GE=c("xe1:xg1"), cutoffs=c(l,u))$p.value
 }
-

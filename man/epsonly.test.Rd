@@ -80,4 +80,3 @@ xe = as.matrix(cbind(xe1,xe2))
 epsonly.test(y~xe,SNP=xg,cutoffs = c(l,u))
 epsonly.test(y~xe,SNP=xg,cutoffs = c(l,u),onebyone = FALSE)
 }
-
