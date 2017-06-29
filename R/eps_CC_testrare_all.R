@@ -123,8 +123,8 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
         ###################################################################
         message("EPS complete-case analysis with random samples")
         y = epsdata0[,1]
-        y_r = epsdata0[,1][randomindex ==1]
-        y_e = epsdata0[,1][randomindex ==0]
+        y_r = y[randomindex ==1]
+        y_e = y[randomindex ==0]
         nr = length(y_r)
         ne = length(y_e)
 
@@ -217,23 +217,23 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
             c = c(2*h1 - h3 - h1*h1)
             b = c(h0 - h2 - h0*h1)
 
-            I11_11 = nr + a*ne
-            I11_33 = ne*(c - 3*c(h1)) + 2*ne + 2*nr
+            I11_11 = nr + ne*a
 
-            I11_31 = sum(b-2*c(h0)); I11_13 = t(I11_31)
+            I11_33 = ne*(c - 3*c(h1)) + 2*ne + 2*nr
+            I11_31 = ne*(b-2*c(h0))
+            I11_13 = t(I11_31)
 
             I11 = cbind(rbind(I11_11,I11_31),
                         rbind(I11_13,I11_33))
 
             I22 = t(gr)%*%gr + a*t(ge)%*%ge
-
             I21_1 = colSums(gr) + a*colSums(ge)
             I21_3 = 2*t(gr)%*%f_r/sigma + 2*t(ge)%*%f_e/sigma + b*colSums(ge)
 
             I21 = cbind(I21_1,I21_3); I12 = t(I21)
 
             Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-            s = t(y_r-alpha)%*%gr/sigma2 + t(y_e-alpha+sigma*h0)%*%ge/sigma2
+            s = t(y_r-alpha)%*%gr/sigma2 + t(y_e-alpha+sigma*c(h0))%*%ge/sigma2
 
             t = s%*%ginv(Sigma)%*%t(s)
             pvalue = pchisq(t,ng,lower.tail=FALSE)
@@ -247,8 +247,7 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
 
 
 
-epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex,weights){
-
+epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomindex,weights){
     Bmat = diag(weights)
 
     if(!rsample){
@@ -328,11 +327,7 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             for(c in 1:length(d)){
                 qdist = qdist + d[c]*rchisq(1000000,1)
             }
-
-            #critval = quantile(qdist,probs = 0.95)
-
             teststat = c(s%*%Bmat%*%t(s))
-
             pvalue = sum(qdist > teststat)/1000000
 
             result = list(teststat,pvalue,d)
@@ -389,11 +384,7 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             for(c in 1:length(d)){
                 qdist = qdist + d[c]*rchisq(1000000,1)
             }
-
-            #critval = quantile(qdist,probs = 0.95)
-
             teststat = c(s%*%Bmat%*%t(s))
-
             pvalue = sum(qdist > teststat)/1000000
 
             result = list(teststat,pvalue,d)
@@ -406,8 +397,8 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
         ###################################################################
         message("EPS complete-case analysis with random samples")
         y = epsdata0[,1]
-        y_r = epsdata0[,1][randomindex ==1]
-        y_e = epsdata0[,1][randomindex ==0]
+        y_r = y[randomindex ==1]
+        y_e = y[randomindex ==0]
         nr = length(y_r)
         ne = length(y_e)
 
@@ -416,7 +407,7 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
         ge =  g[randomindex ==0,]
         ng = dim(g)[2]
 
-        modeldata = epsdata0
+        modeldata = cbind(epsdata0[,1],covariates0)
 
         if(isx){
             ###############################################################
@@ -481,12 +472,8 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             for(c in 1:length(d)){
                 qdist = qdist + d[c]*rchisq(1000000,1)
             }
-
-            #critval = quantile(qdist,probs = 0.95)
-
             teststat = c(s%*%Bmat%*%t(s))
-
-            pvalue = sum(qdist > teststat)/10000000
+            pvalue = sum(qdist > teststat)/1000000
 
             result = list(teststat,pvalue,d)
             names(result) = c("statistic","p.value","eigen")
@@ -495,7 +482,7 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             ##############################################################
             # No covariates present in the null model
             ##############################################################
-            fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
+            fit = epsCC.loglikmax(as.matrix(y),c(l,u),randomindex) # Fit under H0
             alpha = fit[1]
             sigma = fit[length(fit)]
             sigma2 = sigma*sigma
@@ -515,7 +502,7 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             c = c(2*h1 - h3 - h1*h1)
             b = c(h0 - h2 - h0*h1)
 
-            I11_11 = nr + a*ne
+            I11_11 = nr + ne*a
 
             I11_33 = ne*(c - 3*c(h1)) + 2*ne + 2*nr
             I11_31 = ne*(b-2*c(h0))
@@ -525,14 +512,13 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
                         rbind(I11_13,I11_33))
 
             I22 = t(gr)%*%gr + a*t(ge)%*%ge
-
             I21_1 = colSums(gr) + a*colSums(ge)
             I21_3 = 2*t(gr)%*%f_r/sigma + 2*t(ge)%*%f_e/sigma + b*colSums(ge)
 
             I21 = cbind(I21_1,I21_3); I12 = t(I21)
 
             Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-            s = t(y_r-alpha)%*%gr/sigma2 + t(y_e-alpha+sigma*h0)%*%ge/sigma2
+            s = t(y_r-alpha)%*%gr/sigma2 + t(y_e-alpha+sigma*c(h0))%*%ge/sigma2
 
             Vmat = eigen(Sigma)$vectors
             Dmat = t(Vmat)%*%Sigma%*%Vmat
@@ -545,12 +531,8 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             for(c in 1:length(d)){
                 qdist = qdist + d[c]*rchisq(1000000,1)
             }
-
-            #critval = quantile(qdist,probs = 0.95)
-
             teststat = c(s%*%Bmat%*%t(s))
-
-            pvalue = sum(qdist > teststat)/10000000
+            pvalue = sum(qdist > teststat)/1000000
 
             result = list(teststat,pvalue,d)
             names(result) = c("statistic","p.value","eigen")
