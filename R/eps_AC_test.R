@@ -1,6 +1,6 @@
-#' @title Score test EPS-CC
+#' @title Score test EPS-AC
 #' @description
-#' \code{epsCC.test} performs a score test for common genetic variants
+#' \code{epsAC.test} performs a score test for common genetic variants
 #' under the EPS all-case design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis, see details
@@ -10,7 +10,7 @@
 #' assumed dependent on other (non-genetic) covariates,
 #' default set to \code{FALSE}
 #' @param cx optional vector of names of confounding (non-genetic) covariates
-#' @return \code{epsfull.test} returns
+#' @return \code{epsAC.test} returns
 #' \item{statistic}{the score test statistic}
 #' \item{p.value}{the P-value}
 #' @details

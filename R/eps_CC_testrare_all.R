@@ -142,7 +142,7 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
             x_r = as.matrix(as.matrix(covariates0)[randomindex ==1,])
             x_e = as.matrix(as.matrix(covariates0)[randomindex ==0,])
 
-            fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
+            fit = epsCC.loglikmax(modeldata,c(l,u),randomindex) # Fit under H0
             alpha = fit[1]
             beta = fit[2:(length(fit)-1)]
             sigma = fit[length(fit)]
@@ -166,16 +166,11 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
 
             I11_11 = nr + sum(a)
             I11_22 = t(x_r)%*%x_r + t(x_e)%*%diag(a)%*%x_e
-
-            I11_21 = colSums(x_r) + t(x_e)%*%a
-            I11_12 = t(I11_21)
-
             I11_33 = sum(c - 3*c(h1)) + 2*ne + 2*nr
-            I11_31 = sum(b-2*c(h0))
-            I11_13 = t(I11_31)
 
-            I11_23 = t(x_e)%*%(b-2*c(h0))
-            I11_32 = t(I11_23)
+            I11_21 = colSums(x_r) + t(x_e)%*%a; I11_12 = t(I11_21)
+            I11_31 = sum(b-2*c(h0)); I11_13 = t(I11_31)
+            I11_23 = t(x_e)%*%(b-2*c(h0)); I11_32 = t(I11_23)
 
             I11 = cbind(rbind(I11_11,I11_21,I11_31),
                         rbind(I11_12,I11_22,I11_32),
@@ -185,7 +180,6 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
 
             I21_1 = colSums(gr) + t(ge)%*%a
             I21_2 = t(gr)%*%x_r + t(ge)%*%diag(a)%*%x_e
-
             I21_3 = 2*t(gr)%*%f_r/sigma + 2*t(ge)%*%f_e/sigma + t(ge)%*%b
 
             I21 = cbind(I21_1,I21_2,I21_3); I12 = t(I21)
@@ -347,25 +341,43 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             return(result)
         }else{
             ###############################################################
-            # No covariates present in the null model - use expected info matrix
+            # No covariates present in the null model
             ###############################################################
             fit = epsCC.loglikmax(modeldata,c(l,u)) # Fit under H0
             alpha = fit[1]
             sigma = fit[length(fit)]
             sigma2 = sigma*sigma
 
+            f = y-alpha
             zl = (l-alpha)/sigma
             zu = (u-alpha)/sigma
 
             h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
             h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+            h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+            h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/(1-pnorm(zu)+pnorm(zl))
 
             a = c(1 - h1 - h0*h0)
+            c = c(2*h1 - h3 - h1*h1)
+            b = c(h0 - h2 - h0*h1)
 
-            O = matrix(1,nrow = n,ncol = 1); H = O%*%ginv(t(O)%*%O)%*%t(O); I = diag(1,n)
+            I11_11 = n*a
+            I11_33 = n*(c - 3*c(h1)) + 2*n
 
-            Sigma = (a/sigma2)*t(g)%*%(I-H)%*%g
-            s = t(y-mean(y))%*%g/sigma2
+            I11_31 = n*(b-2*c(h0)); I11_13 = t(I11_31)
+
+            I11 = cbind(rbind(I11_11,I11_31),
+                        rbind(I11_13,I11_33))
+
+            I22 = a*t(g)%*%g
+
+            I21_1 = a*colSums(g)
+            I21_3 = 2*t(g)%*%f/sigma + b*colSums(g)
+
+            I21 = cbind(I21_1,I21_3); I12 = t(I21)
+
+            Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+            s = t(y-alpha+sigma*h0)%*%g/sigma2
 
             Vmat = eigen(Sigma)$vectors
             Dmat = t(Vmat)%*%Sigma%*%Vmat
@@ -394,17 +406,15 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
         # Extremes + random sample
         ###################################################################
         message("EPS complete-case analysis with random samples")
-
         y = epsdata0[,1]
         y_r = epsdata0[,1][randomindex ==1]
         y_e = epsdata0[,1][randomindex ==0]
         nr = length(y_r)
         ne = length(y_e)
-        n = nr + ne
 
         g = as.matrix(RV)
         gr = g[randomindex ==1,]
-        ge = g[randomindex ==0,]
+        ge =  g[randomindex ==0,]
         ng = dim(g)[2]
 
         modeldata = epsdata0
@@ -416,7 +426,7 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             x_r = as.matrix(as.matrix(covariates0)[randomindex ==1,])
             x_e = as.matrix(as.matrix(covariates0)[randomindex ==0,])
 
-            fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
+            fit = epsCC.loglikmax(modeldata,c(l,u),randomindex) # Fit under H0
             alpha = fit[1]
             beta = fit[2:(length(fit)-1)]
             sigma = fit[length(fit)]
@@ -440,16 +450,11 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
 
             I11_11 = nr + sum(a)
             I11_22 = t(x_r)%*%x_r + t(x_e)%*%diag(a)%*%x_e
-
-            I11_21 = colSums(x_r) + t(x_e)%*%a
-            I11_12 = t(I11_21)
-
             I11_33 = sum(c - 3*c(h1)) + 2*ne + 2*nr
-            I11_31 = sum(b-2*c(h0))
-            I11_13 = t(I11_31)
 
-            I11_23 = t(x_e)%*%(b-2*c(h0))
-            I11_32 = t(I11_23)
+            I11_21 = colSums(x_r) + t(x_e)%*%a; I11_12 = t(I11_21)
+            I11_31 = sum(b-2*c(h0)); I11_13 = t(I11_31)
+            I11_23 = t(x_e)%*%(b-2*c(h0)); I11_32 = t(I11_23)
 
             I11 = cbind(rbind(I11_11,I11_21,I11_31),
                         rbind(I11_12,I11_22,I11_32),
@@ -459,7 +464,6 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
 
             I21_1 = colSums(gr) + t(ge)%*%a
             I21_2 = t(gr)%*%x_r + t(ge)%*%diag(a)%*%x_e
-
             I21_3 = 2*t(gr)%*%f_r/sigma + 2*t(ge)%*%f_e/sigma + t(ge)%*%b
 
             I21 = cbind(I21_1,I21_2,I21_3); I12 = t(I21)
@@ -490,7 +494,7 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
             return(result)
         }else{
             ##############################################################
-            # No covariates present in the null model - use expected info
+            # No covariates present in the null model
             ##############################################################
             fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
             alpha = fit[1]
@@ -505,13 +509,31 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex
 
             h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
             h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
+            h2 = (-dnorm(zu)*zu*zu+dnorm(zl)*zl*zl)/(1-pnorm(zu)+pnorm(zl))
+            h3 = (-dnorm(zu)*zu*zu*zu+dnorm(zl)*zl*zl*zl)/(1-pnorm(zu)+pnorm(zl))
 
-            a2 = c(1- (ne/n)*h1 - (ne/n)*h0*h0)
+            a = c(1 - h1 - h0*h0)
+            c = c(2*h1 - h3 - h1*h1)
+            b = c(h0 - h2 - h0*h1)
 
-            O = matrix(1,nrow = n,ncol = 1); H = O%*%ginv(t(O)%*%O)%*%t(O); I = diag(1,n)
+            I11_11 = nr + a*ne
 
-            Sigma = (a2/sigma2)*t(g)%*%(I-H)%*%g
-            s = t(y-mean(y))%*%g/sigma2
+            I11_33 = ne*(c - 3*c(h1)) + 2*ne + 2*nr
+            I11_31 = ne*(b-2*c(h0))
+            I11_13 = t(I11_31)
+
+            I11 = cbind(rbind(I11_11,I11_31),
+                        rbind(I11_13,I11_33))
+
+            I22 = t(gr)%*%gr + a*t(ge)%*%ge
+
+            I21_1 = colSums(gr) + a*colSums(ge)
+            I21_3 = 2*t(gr)%*%f_r/sigma + 2*t(ge)%*%f_e/sigma + b*colSums(ge)
+
+            I21 = cbind(I21_1,I21_3); I12 = t(I21)
+
+            Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
+            s = t(y_r-alpha)%*%gr/sigma2 + t(y_e-alpha+sigma*h0)%*%ge/sigma2
 
             Vmat = eigen(Sigma)$vectors
             Dmat = t(Vmat)%*%Sigma%*%Vmat

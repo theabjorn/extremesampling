@@ -1,15 +1,47 @@
-#' @title Test for associations under the EPS complete-case design
+#' @title Score test EPS-AC rare variants
 #' @description
-#' \code{epsAC.rv.test} performs a score test for common genetic variants
-#' under the EPS complete-case design
+#' \code{epsAC.rv.test} performs a score test for a burden of
+#' rare genetic variants under the EPS all-case design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis
-#' @param RV a matrix of genetic variants to be tested against the null
-#' @return \code{epsAC.rv.test} returns for each genetic variant:
+#' @param RV a matrix of variables to be tested against the null (NA for
+#' not genotyped individuals)
+#' @param confounder \code{TRUE} if distribution of SNPs should be
+#' assumed dependent on other (non-genetic) covariates,
+#' default set to \code{FALSE}
+#' @param cx optional vector of names of confounding (non-genetic) covariates
+#' @param method testing the burden using \code{naive}, \code{collapsing} or
+#' \code{lmm} method, see details
+#' @param weights optional weights for the \code{collapsing} or
+#' \code{lmm} method
+#'
+#' @return \code{epsAC.rv.test} returns for the whole burden of variants:
 #' \item{statistic}{the score test statistic}
 #' \item{p.value}{the P-value}
+#'
 #' @details
-#' nanana
+#' The \code{nullmodel} \code{\link[stats]{formula}} object is of the type
+#' y~xe, which describes a regression model, y=a+be*xe+e
+#' assuming a normal distribution for the residuals (e). The covariate
+#' xe is a non-genetic/environmental covariate (optional).
+#' The variables are taken from the environment that the
+#' function is called from.
+#' The null hypothesis bg=0 is tested for the model y=a+be*xe+bg*xg+e.
+#' The covariate \code{xg} is a burden of several rare genetic variants.
+#'
+#' For the EPS all-case design, the SNP genotypes are only observed
+#' for individuals with extreme values of the phenotype \code{y}, and possibly
+#' some random samples. For remaining individuals, the unobserved genotype
+#' must be coded as NA.
+#'
+#' If confounder = TRUE, the genetic variables are assumed to have
+#' different distribution for different levels of other (non-genetic)
+#' covariates, these can be specified by a vector of names \code{cx}.
+#'
+#' The \code{naive} method uses a standard score test to test the burden,
+#' the \code{collaps} method tests the (weighted) sum of all variants in the
+#' burden, while the \code{lmm} method is a (weighted) variance
+#' component score test.
 #'
 #' @import MASS stats
 #' @export
@@ -17,15 +49,31 @@
 #' N = 5000 # Number of individuals in a population
 #' xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
 #' xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
-#' xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
+#' maf1 = 0.01; maf2 = 0.02; maf3 = 0.005
+#' xg1 = sample(c(0,1,2),N,c((1-maf1)^2,2*maf1*(1-maf1),maf1^2), replace = TRUE) # RV
+#' xg2 = sample(c(0,1,2),N,c((1-maf2)^2,2*maf2*(1-maf2),maf2^2), replace = TRUE) # RV
+#' xg3 = sample(c(0,1,2),N,c((1-maf3)^2,2*maf3*(1-maf3),maf3^2), replace = TRUE) # RV
 #' # Model parameters
-#' a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
+#' a = 50; be1 = 5; be2 = 8; bg1 = -0.3; bg2 = 0.6; sigma = 2
 #' # Generate response y
 #' y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
 #' # Identify extremes, here upper and lower 25% of population
 #' u = quantile(y,probs = 3/4,na.rm=TRUE)
 #' l = quantile(y,probs = 1/4,na.rm=TRUE)
+#' extreme = (y < l) | (y >= u)
+#' # Create the EPS all-case data set
+#' xg1[!extreme] = NA; xg2[!extreme] = NA; xg3[!extreme] = NA;
+#' xg = as.matrix(cbind(xg1,xg2,xg3))
+#' xe = as.matrix(cbind(xe1,xe2))
+#'
+#' # Testing
+#' # Naive test
+#' epsAC.rv.test(y~xe,RV=xg)
+#' # Collapsing test
+#' epsAC.rv.test(y~xe,RV=xg,method = "collaps",weights)
+#' # Variance component test (assume linear mixed model)
+#' epsAC.rv.test(y~xe,RV=xg,method = "lmm",weights)
+#'
 
 epsAC.rv.test = function(nullmodel,RV,confounder = FALSE, cx,method = "naive",weights){
     if(class(nullmodel)!="formula"){
@@ -75,7 +123,7 @@ epsAC.rv.test = function(nullmodel,RV,confounder = FALSE, cx,method = "naive",we
 
     if(method == "naive"){
         epsAC.rv.test.naive(epsdata0,covariates0,RV,isxe,confounder,cind)
-    }else if(method == "burden"){
+    }else if(method == "collaps"){
         g = rep(0,dim(RV)[1])
         for(c in 1:dim(RV)[2]){
             g = g + c(weights[c])*c(RV[,c])
