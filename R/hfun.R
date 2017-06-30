@@ -179,3 +179,79 @@ chfun2 = function(y,xe,alpha,betaE,betaG,sigma,a,c,gint,genotypes,genoprobs,uind
     res = (apply(tmp, 2, "/", tmp2))
     return(res)
 }
+
+
+
+
+
+
+
+
+hfun00 = function(y,alpha,betaG,sigma,a,c,gint,genotypes,genoprobs){
+    tmp = rep(0,length(y))
+    tmp2 = rep(0,length(y))
+    for (i in 1:dim(genotypes)[1]){
+        fi = y - alpha - c(t(genotypes[i,])%*%betaG)
+        tmp = tmp + (fi^a)*dnorm(fi/sigma)*genoprobs[i]*(genotypes[i,gint]^c)
+        tmp2 = tmp2 + dnorm(fi/sigma)*genoprobs[i]
+    }
+    return(tmp/tmp2)
+}
+
+hfun0dash0 = function(y,alpha,betaG,sigma,a,c,gint,genotypes,genoprobs,k){
+    fk = y - alpha - c(t(genotypes[k,])%*%betaG)
+    mk = length(genoprobs)
+    fmk = y - alpha - c(t(genotypes[mk,])%*%betaG)
+
+    tmp = (fk^a)*dnorm(fk/sigma)*(genotypes[k,gint]^c) - (fmk^a)*dnorm(fmk/sigma)*(genotypes[mk,gint]^c)
+
+    tmp2 = rep(0,length(y))
+    for (j in 1:dim(genotypes)[1]){
+        fi = y - alpha - c(t(genotypes[j,])%*%betaG)
+        tmp2 = tmp2 + dnorm(fi/sigma)*genoprobs[j]
+    }
+    return(tmp/tmp2)
+}
+
+hfun1dash0 = function(y,alpha,betaG,sigma,a,c,gint,genotypes,genoprobs,k){
+    fk = y - alpha - c(t(genotypes[k,])%*%betaG)
+    mk = length(genoprobs)
+    fmk = y - alpha - c(t(genotypes[mk,])%*%betaG)
+
+    tmp = (fk^a)*dnorm(fk/sigma)*(genotypes[k,gint]^c)*genotypes[k,] - (fmk^a)*dnorm(fmk/sigma)*(genotypes[mk,gint]^c)*genotypes[mk,]
+
+    tmp2 = rep(0,length(y))
+    for (i in 1:dim(genotypes)[1]){
+        fi = y - alpha - c(t(genotypes[i,])%*%betaG)
+        tmp2 = tmp2 + dnorm(fi/sigma)*genoprobs[i]
+    }
+    return(tmp/tmp2)
+}
+
+hfun10 = function(y,alpha,betaG,sigma,a,c,gint,genotypes,genoprobs){
+    tmp = matrix(0,ncol=dim(genotypes)[2],nrow = length(y))
+    tmp2 = rep(0,length(y))
+    for (j in 1:dim(genotypes)[1]){
+        fi = y - alpha - c(t(genotypes[j,])%*%betaG)
+        #tmp = tmp + ((fi^a)*dnorm(fi/sigma)*genoprobs[j]*(genotypes[j,gint]^c))*c(genotypes[j,])
+        for(k in 1:dim(genotypes)[2]){
+            tmp[,k] = tmp[,k] + ((fi^a)*dnorm(fi/sigma)*genoprobs[j]*(genotypes[j,gint]^c))*c(genotypes[j,k])
+        }
+
+        tmp2 = tmp2 + dnorm(fi/sigma)*genoprobs[j]
+    }
+    return(tmp/tmp2)
+}
+
+hfun20 = function(y,alpha,betaG,sigma,a,c,gint,genotypes,genoprobs){
+    tmp = matrix(0,ncol=dim(genotypes)[2]*dim(genotypes)[2],nrow = length(y))
+    tmp2 = rep(0,length(y))
+    for (j in 1:dim(genotypes)[1]){
+        fi = y - alpha -c(t(genotypes[j,])%*%betaG)
+        for(k in 1:(dim(genotypes)[2]*dim(genotypes)[2])){
+            tmp[,k] = tmp[,k] + ((fi^a)*dnorm(fi/sigma)*genoprobs[j]*(genotypes[j,gint]^c))*(as.vector(t(c(genotypes[j,]%*%t(genotypes[j,]))))[k])
+        }
+        tmp2 = tmp2 + dnorm(fi/sigma)*genoprobs[j]
+    }
+    return(tmp/tmp2)
+}

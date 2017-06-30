@@ -269,7 +269,7 @@ epsCC.test = function(nullmodel,SNP,cutoffs,randomindex){
             x_r = as.matrix(as.matrix(covariates0)[randomindex ==1,])
             x_e = as.matrix(as.matrix(covariates0)[randomindex ==0,])
 
-            fit = epsonlyloglikmax(modeldata,c(l,u),randomindex) # Fit under H0
+            fit = epsCC.loglikmax(modeldata,c(l,u),randomindex) # Fit under H0
             alpha = fit[1]
             beta = fit[2:(length(fit)-1)]
             sigma = fit[length(fit)]

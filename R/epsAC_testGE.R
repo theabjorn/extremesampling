@@ -1,7 +1,7 @@
-#' @title Test for gene-environment associations under the EPS-full design
+#' @title Test for gene-environment associations under the EPS-AC design
 #' @description
-#' \code{epsfull.testGE} performs a likelihood ratio test for gene-environment
-#' interaction variables under the EPS-full design
+#' \code{epsAC.test.GE} performs a likelihood ratio test for gene-environment
+#' interaction variables under the EPS-AC design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis
 #' (including the genetic covariate)
@@ -11,7 +11,7 @@
 #' assumed dependent on other (non-genetic) covariates,
 #' default set to \code{FALSE}
 #' @param cx optional vector of names of confounding (non-genetic) covariates
-#' @return \code{epsfull.testGE} returns
+#' @return \code{epsAC.testGE} returns
 #' \item{statistic}{thescore test statistic}
 #' \item{p.value}{the P-value}
 #' @details
@@ -30,7 +30,7 @@
 #' H0: b=0. The specific gene-environment interactions that should be
 #' tested is specified in \code{GE}.
 #'
-#' The EPS-full design is such that the SNP genotype is only observed
+#' The EPS-AC design is such that the SNP genotype is only observed
 #' for individuals with high and low values of the phenotype \code{y}.
 #' For remaining individuals, the unobserved genotype most be coded as NA.
 #' A SNP is assumed to have possible genotype 0, 1 or 2 according to the
@@ -61,13 +61,13 @@
 #' u = quantile(y,probs = 3/4,na.rm=TRUE)
 #' l = quantile(y,probs = 1/4,na.rm=TRUE)
 #' extreme = (y < l) | (y >= u)
-#' # Create the EPS-full data set by setting
+#' # Create the EPS-AC data set by setting
 #' # the SNP values of non-extremes to NA
 #' xg1[!extreme] = NA
 #' xg2[!extreme] = NA
 #' xg = as.matrix(cbind(xg1,xg2))
 #' xe = as.matrix(cbind(xe1,xe2))
-#' epsfull.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
+#' epsAC.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
 
 epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
 
@@ -84,7 +84,7 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
 
     G = as.matrix(G)
     E = as.matrix(E)
-    if(dim(G)[2]>1 | dim(E)[2]>1){
+    if((dim(G)[2]>1) | (dim(E)[2]>1)){
         stop("G and E must be vectors of one genetic covariate and one environmental covariate")
     }
 
@@ -112,6 +112,9 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
 
     if(ng == 0){stop("Genetic covariates must be included in null model")}
     if(ng > 1){stop("Only G should be included in the null model, no other genetic covariates")}
+
+    isxe = TRUE
+    if(ne == 0){isxe = FALSE}
 
     if(confounder){
         if(missing(cx)){cx = colnames(xe)
@@ -157,184 +160,325 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
         ###############################################################
         # No confounding assumed
         ###############################################################
-        fit0 = epsfullloglikmax(data,ng,hessian = TRUE)
-        coefs = fit0[[2]][1:length(fit0[[2]])-1]
-        alpha = coefs[1]
-        betaE = coefs[2:(2+ne-1)]
-        betaG = coefs[(2+ne):length(coefs)]
-        sigma = fit0[[2]][length(fit0[[2]])]
-        sigma2 = sigma*sigma
+        if(isxe){
+            fit0 = epsAC.loglikmax(data,ng,hessian = TRUE)
+            coefs = fit0[[2]][1:length(fit0[[2]])-1]
+            alpha = coefs[1]
+            betaE = coefs[2:(2+ne-1)]
+            betaG = coefs[(2+ne):length(coefs)]
+            sigma = fit0[[2]][length(fit0[[2]])]
+            sigma2 = sigma*sigma
 
-        genoprobs = fit0[[3]]
-        genotypes = fit0[[4]]
+            genoprobs = fit0[[3]]
+            genotypes = fit0[[4]]
 
-        eg = G[extreme,1]*E[extreme,1]
-        gint = 1
+            eg = G[extreme,1]*E[extreme,1]
+            gint = 1
 
-        # alpha-alpha
-        I_11 = (n/sigma^2) - (1/sigma^4)*sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs) -
-                                                 hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)^2)
+            # alpha-alpha
+            I_11 = (n/sigma^2) - (1/sigma^4)*sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs) -
+                                                     hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)^2)
 
-        # alpha-betaE
-        I_12 = (1/sigma^2)*colSums(xe)-
-            (1/sigma^4)*t(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs) -
-                              (hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)^2))%*%x_ic
-        # alpha-betaG
-        I_13 = (1/sigma^2)*colSums(g_cc) +
-            (1/sigma^2)*colSums(hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs)) -
-            (1/sigma^4)*(colSums(hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)) -
-                             t(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
+            # alpha-betaE
+            I_12 = (1/sigma^2)*colSums(xe)-
+                (1/sigma^4)*t(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs) -
+                                  (hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)^2))%*%x_ic
+            # alpha-betaG
+            I_13 = (1/sigma^2)*colSums(g_cc) +
+                (1/sigma^2)*colSums(hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs)) -
+                (1/sigma^4)*(colSums(hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)) -
+                                 t(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
 
-        # alpha-betaEG
-        I_14 = (1/sigma^2)*sum(G[extreme,]*E[extreme,]) +
-            (1/sigma^2)*t(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,0,1,gint,genotypes,genoprobs))%*%E[!extreme,] -
-            (1/sigma^4)*t(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,1,gint,genotypes,genoprobs) -
-                              hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)*
-                              hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs))%*%E[!extreme,]
+            # alpha-betaEG
+            I_14 = (1/sigma^2)*sum(G[extreme,]*E[extreme,]) +
+                (1/sigma^2)*t(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,0,1,gint,genotypes,genoprobs))%*%E[!extreme,] -
+                (1/sigma^4)*t(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,1,gint,genotypes,genoprobs) -
+                                  hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)*
+                                  hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs))%*%E[!extreme,]
 
-        # alpha-sigma
-        I_15 = (2/sigma^3)*sum(y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG) +
-            (2/sigma^3)*sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)) -
-            (1/sigma^5)*(sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,3,0,gint,genotypes,genoprobs)) -
-                             sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)*
-                                     hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)))
+            # alpha-sigma
+            I_15 = (2/sigma^3)*sum(y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG) +
+                (2/sigma^3)*sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)) -
+                (1/sigma^5)*(sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,3,0,gint,genotypes,genoprobs)) -
+                                 sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)*
+                                         hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)))
 
-        # alpha-genoprobs
-        I_16 = c()
-        for(p in 1:(dim(genotypes)[1]-1)){
-            I_16[p] = -(1/sigma^2)*sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,p)) +
-                (1/sigma^2)*sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
-        }
+            # alpha-genoprobs
+            I_16 = c()
+            for(p in 1:(dim(genotypes)[1]-1)){
+                I_16[p] = -(1/sigma^2)*sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,p)) +
+                    (1/sigma^2)*sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
+            }
 
-        # betaE-betaE
-        I_22 = (1/sigma^2)*t(xe)%*%xe-
-            (1/sigma^4)*t(x_ic)%*%diag(c(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs) -
-                                             (hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)^2)))%*%x_ic
-        # betaE-betaG
-        I_23 = (1/sigma^2)*t(x_cc)%*%g_cc +
-            (1/sigma^2)*t(x_ic)%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs) -
-            (1/sigma^4)*(t(x_ic)%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs) -
-                             t(x_ic)%*%diag(c(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)))%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
+            # betaE-betaE
+            I_22 = (1/sigma^2)*t(xe)%*%xe-
+                (1/sigma^4)*t(x_ic)%*%diag(c(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs) -
+                                                 (hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)^2)))%*%x_ic
+            # betaE-betaG
+            I_23 = (1/sigma^2)*t(x_cc)%*%g_cc +
+                (1/sigma^2)*t(x_ic)%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs) -
+                (1/sigma^4)*(t(x_ic)%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs) -
+                                 t(x_ic)%*%diag(c(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)))%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
 
-        # betaE-betaEG
-        eg = G[extreme,]*E[extreme,]
-        I_24 = (1/sigma^2)*t(x_cc)%*%eg +
-            (1/sigma^2)*t(x_ic)%*%(E[!extreme,]*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,0,1,gint,genotypes,genoprobs)) -
-            (1/sigma^4)*t(x_ic)%*%(E[!extreme,]*(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,1,gint,genotypes,genoprobs) -
-                                                     hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs)))
+            # betaE-betaEG
+            eg = G[extreme,]*E[extreme,]
+            I_24 = (1/sigma^2)*t(x_cc)%*%eg +
+                (1/sigma^2)*t(x_ic)%*%(E[!extreme,]*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,0,1,gint,genotypes,genoprobs)) -
+                (1/sigma^4)*t(x_ic)%*%(E[!extreme,]*(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,1,gint,genotypes,genoprobs) -
+                                                         hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs)))
 
-        # betaE-sigma
-        I_25 = (2/sigma^3)*t(x_cc)%*%c(y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG) +
-            (2/sigma^3)*t(x_ic)%*%c(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)) -
-            (1/sigma^5)*(t(x_ic)%*%c(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,3,0,gint,genotypes,genoprobs) -
-                                         c(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)*
-                                               hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))))
+            # betaE-sigma
+            I_25 = (2/sigma^3)*t(x_cc)%*%c(y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG) +
+                (2/sigma^3)*t(x_ic)%*%c(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)) -
+                (1/sigma^5)*(t(x_ic)%*%c(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,3,0,gint,genotypes,genoprobs) -
+                                             c(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)*
+                                                   hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))))
 
-        # betaE-genoprobs
-        I_26 = matrix(ncol=(dim(genotypes)[1]-1),nrow=dim(xe)[2])
-        for(p in 1:(dim(genotypes)[1]-1)){
-            I_26[,p] = -(1/sigma^2)*t(x_ic)%*%(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,p) -
-                                                   hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
-        }
+            # betaE-genoprobs
+            I_26 = matrix(ncol=(dim(genotypes)[1]-1),nrow=dim(xe)[2])
+            for(p in 1:(dim(genotypes)[1]-1)){
+                I_26[,p] = -(1/sigma^2)*t(x_ic)%*%(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,p) -
+                                                       hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
+            }
 
-        # betaG-betaG
-        I_33 = (1/sigma^2)*t(g_cc)%*%g_cc + (1/sigma^2)*matrix(colSums(hfun2(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs)),nrow=ng,ncol=ng) -
-            (1/sigma^4)*(matrix(colSums(hfun2(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)),nrow=ng,ncol=ng) -
-                             t(hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
+            # betaG-betaG
+            I_33 = (1/sigma^2)*t(g_cc)%*%g_cc + (1/sigma^2)*matrix(colSums(hfun2(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs)),nrow=ng,ncol=ng) -
+                (1/sigma^4)*(matrix(colSums(hfun2(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)),nrow=ng,ncol=ng) -
+                                 t(hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
 
-        # betaG-betaEG
-        I_34 = (1/sigma^2)*t(eg)%*%g_cc + (1/sigma^2)*t(E[!extreme,])%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,0,1,gint,genotypes,genoprobs) -
-            (1/sigma^4)*(t(E[!extreme,])%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,2,1,gint,genotypes,genoprobs) -
-                             t(E[!extreme,]*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs))%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
-        # betaG-sigma
-        I_35 = (2/sigma^3)*t(y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG)%*%g_cc +
-            (2/sigma^3)*colSums(hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)) -
-            (1/sigma^5)*(colSums(hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,3,0,gint,genotypes,genoprobs)) -
-                             t(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs))%*%
-                             hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
+            # betaG-betaEG
+            I_34 = (1/sigma^2)*t(eg)%*%g_cc + (1/sigma^2)*t(E[!extreme,])%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,0,1,gint,genotypes,genoprobs) -
+                (1/sigma^4)*(t(E[!extreme,])%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,2,1,gint,genotypes,genoprobs) -
+                                 t(E[!extreme,]*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs))%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
+            # betaG-sigma
+            I_35 = (2/sigma^3)*t(y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG)%*%g_cc +
+                (2/sigma^3)*colSums(hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)) -
+                (1/sigma^5)*(colSums(hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,3,0,gint,genotypes,genoprobs)) -
+                                 t(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs))%*%
+                                 hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs))
 
-        # betaG-genoprobs
-        I_36 = matrix(ncol=(dim(genotypes)[1]-1),nrow=ng)
-        for(p in 1:(dim(genotypes)[1]-1)){
-            I_36[,p] = -(1/sigma^2)*colSums(hfun1dash(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,p)) +
-                (1/sigma^2)*t(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p))%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)
-        }
+            # betaG-genoprobs
+            I_36 = matrix(ncol=(dim(genotypes)[1]-1),nrow=ng)
+            for(p in 1:(dim(genotypes)[1]-1)){
+                I_36[,p] = -(1/sigma^2)*colSums(hfun1dash(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,p)) +
+                    (1/sigma^2)*t(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p))%*%hfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs)
+            }
 
-        # betaEG-betaEG
-        I_44 = (1/sigma^2)*t(eg)%*%eg +
-            (1/sigma^2)*t(E[!extreme,]^2)%*%hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,0,2,gint,genotypes,genoprobs) -
-            (1/sigma^4)*t(E[!extreme,]^2)%*%(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,2,gint,genotypes,genoprobs) -
-                                                 hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs)^2)
+            # betaEG-betaEG
+            I_44 = (1/sigma^2)*t(eg)%*%eg +
+                (1/sigma^2)*t(E[!extreme,]^2)%*%hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,0,2,gint,genotypes,genoprobs) -
+                (1/sigma^4)*t(E[!extreme,]^2)%*%(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,2,gint,genotypes,genoprobs) -
+                                                     hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs)^2)
 
-        # betaEG-sigma
-        I_45 = (2/sigma^3)*t(y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG)%*%eg +
-            (2/sigma^3)*t(E[!extreme,])%*%hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs) -
-            (1/sigma^5)*t(E[!extreme,])%*%(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,3,1,gint,genotypes,genoprobs) -
-                                               hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)*
-                                               hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs))
+            # betaEG-sigma
+            I_45 = (2/sigma^3)*t(y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG)%*%eg +
+                (2/sigma^3)*t(E[!extreme,])%*%hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs) -
+                (1/sigma^5)*t(E[!extreme,])%*%(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,3,1,gint,genotypes,genoprobs) -
+                                                   hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)*
+                                                   hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs))
 
-        # betaEG-genoprobs
-        I_46 = c()
-        for(p in 1:(dim(genotypes)[1]-1)){
-            I_46[p] = -(1/sigma^2)*t(E[!extreme,])%*%(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs,p) -
-                                                          hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs))
-        }
+            # betaEG-genoprobs
+            I_46 = c()
+            for(p in 1:(dim(genotypes)[1]-1)){
+                I_46[p] = -(1/sigma^2)*t(E[!extreme,])%*%(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs,p) -
+                                                              hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs))
+            }
 
-        # sigma-sigma
+            # sigma-sigma
 
-        I_55 = -n/sigma2 + (3/sigma^4)*sum((y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG)^2) +
-            (3/sigma^4)*sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)) -
-            (1/sigma^6)*sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,4,0,gint,genotypes,genoprobs) -
-                                hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)^2)
+            I_55 = -n/sigma2 + (3/sigma^4)*sum((y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG)^2) +
+                (3/sigma^4)*sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)) -
+                (1/sigma^6)*sum(hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,4,0,gint,genotypes,genoprobs) -
+                                    hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs)^2)
 
-        # sigma-genoprobs
-        I_56 = c()
-        for(p in 1:(dim(genotypes)[1]-1)){
-            I_56[p] = -(1/sigma^3)*sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs,p)) +
-                (1/sigma^3)*sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs))
-        }
+            # sigma-genoprobs
+            I_56 = c()
+            for(p in 1:(dim(genotypes)[1]-1)){
+                I_56[p] = -(1/sigma^3)*sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs,p)) +
+                    (1/sigma^3)*sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs))
+            }
 
-        # genoprobs-genoprobs
-        mp = dim(genotypes)[1]
-        I_66 = matrix(sum(as.vector(rowSums(g_cc - matrix(genotypes[mp,],ncol = dim(g_cc)[2],nrow=dim(g_cc)[1])))==0)/(genoprobs[mp]^2),ncol=(dim(genotypes)[1]-1),nrow=(dim(genotypes)[1]-1))
-        #I_66 = matrix(0,ncol=(dim(genotypes)[1]-1),nrow=(dim(genotypes)[1]-1))
-        for(p in 1:(dim(genotypes)[1]-1)){
-            for(p2 in 1:(dim(genotypes)[1]-1)){
-                if(p==p2){
-                    I_66[p,p] = I_66[p,p] + sum(as.vector(rowSums(g_cc - matrix(genotypes[p,],ncol = dim(g_cc)[2],nrow=dim(g_cc)[1])))==0)/(genoprobs[p]^2) +
-                        sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)^2)
-                }else{
-                    I_66[p,p2] = I_66[p,p2] + sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p2))
+            # genoprobs-genoprobs
+            mp = dim(genotypes)[1]
+            I_66 = matrix(sum(as.vector(rowSums(g_cc - matrix(genotypes[mp,],ncol = dim(g_cc)[2],nrow=dim(g_cc)[1])))==0)/(genoprobs[mp]^2),ncol=(dim(genotypes)[1]-1),nrow=(dim(genotypes)[1]-1))
+            #I_66 = matrix(0,ncol=(dim(genotypes)[1]-1),nrow=(dim(genotypes)[1]-1))
+            for(p in 1:(dim(genotypes)[1]-1)){
+                for(p2 in 1:(dim(genotypes)[1]-1)){
+                    if(p==p2){
+                        I_66[p,p] = I_66[p,p] + sum(as.vector(rowSums(g_cc - matrix(genotypes[p,],ncol = dim(g_cc)[2],nrow=dim(g_cc)[1])))==0)/(genoprobs[p]^2) +
+                            sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)^2)
+                    }else{
+                        I_66[p,p2] = I_66[p,p2] + sum(hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p2))
+                    }
                 }
             }
+
+            I11_1 = c(I_11,I_12,I_13,I_15,I_16)
+            I11_2 = cbind(t(I_12),I_22,I_23,I_25,I_26)
+            I11_3 = cbind(t(I_13),t(I_23),I_33,t(I_35),I_36)
+            I11_5 = c(I_15,t(I_25),I_35,I_55,I_56)
+            I11_6 = cbind(I_16,t(I_26),t(I_36),I_56,I_66)
+            I11 = rbind(I11_1,I11_2,I11_3,I11_5,I11_6)
+
+            I22 = I_44
+
+            I12 = c(I_14,t(I_24),I_34,I_45,I_46)
+
+            Sigma = (I22 - t(I12)%*%ginv(I11)%*%I12)
+
+            s = (sum((y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG)*eg) +
+                     sum(E[!extreme,]*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs)))/sigma2
+            t = (s*s)/Sigma
+            pval = pchisq(t,1,lower.tail=FALSE)
+
+            result = list(t,pval)
+            names(result) = c("statistic","p.value")
+            return(result)
+        }else{
+            fit0 = epsAC.loglikmax(data,ng,hessian = TRUE)
+            coefs = fit0[[2]][1:length(fit0[[2]])-1]
+            alpha = coefs[1]
+            betaG = coefs[2]
+            sigma = fit0[[2]][length(fit0[[2]])]
+            sigma2 = sigma*sigma
+
+            genoprobs = fit0[[3]]
+            genotypes = fit0[[4]]
+
+            eg = G[extreme,1]*E[extreme,1]
+            gint = 1
+            x_ic = as.matrix(E[!extreme,])
+
+            # alpha-alpha
+            I_11 = (n/sigma^2) - (1/sigma^4)*sum(hfun00(y_ic,alpha,betaG,sigma,2,0,gint,genotypes,genoprobs) -
+                                                     hfun00(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs)^2)
+
+            # alpha-betaG
+            I_13 = (1/sigma^2)*sum(g_cc) +
+                (1/sigma^2)*sum(hfun10(y_ic,alpha,betaG,sigma,0,0,gint,genotypes,genoprobs)) -
+                (1/sigma^4)*(sum(hfun10(y_ic,alpha,betaG,sigma,2,0,gint,genotypes,genoprobs)) -
+                                 t(hfun00(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs))%*%hfun10(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs))
+
+            # alpha-betaEG
+            I_14 = (1/sigma^2)*sum(G[extreme,]*E[extreme,]) +
+                (1/sigma^2)*t(hfun00(y_ic,alpha,betaG,sigma,0,1,gint,genotypes,genoprobs))%*%E[!extreme,] -
+                (1/sigma^4)*t(hfun00(y_ic,alpha,betaG,sigma,2,1,gint,genotypes,genoprobs) -
+                                  hfun00(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs)*
+                                  hfun00(y_ic,alpha,betaG,sigma,1,1,gint,genotypes,genoprobs))%*%E[!extreme,]
+
+            # alpha-sigma
+            I_15 = (2/sigma^3)*sum(y_cc - alpha  - g_cc%*%betaG) +
+                (2/sigma^3)*sum(hfun00(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs)) -
+                (1/sigma^5)*(sum(hfun00(y_ic,alpha,betaG,sigma,3,0,gint,genotypes,genoprobs)) -
+                                 sum(hfun00(y_ic,alpha,betaG,sigma,2,0,gint,genotypes,genoprobs)*
+                                         hfun00(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs)))
+
+            # alpha-genoprobs
+            I_16 = c()
+            for(p in 1:(dim(genotypes)[1]-1)){
+                I_16[p] = -(1/sigma^2)*sum(hfun0dash0(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs,p)) +
+                    (1/sigma^2)*sum(hfun0dash0(y_ic,alpha,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun00(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs))
+            }
+
+            # betaG-betaG
+            I_33 = (1/sigma^2)*t(g_cc)%*%g_cc + (1/sigma^2)*matrix(sum(hfun20(y_ic,alpha,betaG,sigma,0,0,gint,genotypes,genoprobs)),nrow=ng,ncol=ng) -
+                (1/sigma^4)*(matrix(sum(hfun20(y_ic,alpha,betaG,sigma,2,0,gint,genotypes,genoprobs)),nrow=ng,ncol=ng) -
+                                 t(hfun10(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs))%*%hfun10(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs))
+
+            # betaG-betaEG
+            I_34 = (1/sigma^2)*t(eg)%*%g_cc + (1/sigma^2)*t(E[!extreme,])%*%hfun10(y_ic,alpha,betaG,sigma,0,1,gint,genotypes,genoprobs) -
+                (1/sigma^4)*(t(E[!extreme,])%*%hfun10(y_ic,alpha,betaG,sigma,2,1,gint,genotypes,genoprobs) -
+                                 t(E[!extreme,]*hfun00(y_ic,alpha,betaG,sigma,1,1,gint,genotypes,genoprobs))%*%hfun10(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs))
+            # betaG-sigma
+            I_35 = (2/sigma^3)*t(y_cc - alpha  - g_cc%*%betaG)%*%g_cc +
+                (2/sigma^3)*sum(hfun10(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs)) -
+                (1/sigma^5)*(sum(hfun10(y_ic,alpha,betaG,sigma,3,0,gint,genotypes,genoprobs)) -
+                                 t(hfun00(y_ic,alpha,betaG,sigma,2,0,gint,genotypes,genoprobs))%*%
+                                 hfun10(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs))
+
+            # betaG-genoprobs
+            I_36 = matrix(ncol=(dim(genotypes)[1]-1),nrow=ng)
+            for(p in 1:(dim(genotypes)[1]-1)){
+                I_36[,p] = -(1/sigma^2)*sum(hfun1dash0(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs,p)) +
+                    (1/sigma^2)*t(hfun0dash0(y_ic,alpha,betaG,sigma,0,0,gint,genotypes,genoprobs,p))%*%hfun10(y_ic,alpha,betaG,sigma,1,0,gint,genotypes,genoprobs)
+            }
+
+            # betaEG-betaEG
+            I_44 = (1/sigma^2)*t(eg)%*%eg +
+                (1/sigma^2)*t(E[!extreme,]^2)%*%hfun00(y_ic,alpha,betaG,sigma,0,2,gint,genotypes,genoprobs) -
+                (1/sigma^4)*t(E[!extreme,]^2)%*%(hfun00(y_ic,alpha,betaG,sigma,2,2,gint,genotypes,genoprobs) -
+                                                     hfun00(y_ic,alpha,betaG,sigma,1,1,gint,genotypes,genoprobs)^2)
+
+            # betaEG-sigma
+            I_45 = (2/sigma^3)*t(y_cc - alpha  - g_cc%*%betaG)%*%eg +
+                (2/sigma^3)*t(E[!extreme,])%*%hfun00(y_ic,alpha,betaG,sigma,1,1,gint,genotypes,genoprobs) -
+                (1/sigma^5)*t(E[!extreme,])%*%(hfun00(y_ic,alpha,betaG,sigma,3,1,gint,genotypes,genoprobs) -
+                                                   hfun00(y_ic,alpha,betaG,sigma,2,0,gint,genotypes,genoprobs)*
+                                                   hfun00(y_ic,alpha,betaG,sigma,1,1,gint,genotypes,genoprobs))
+
+            # betaEG-genoprobs
+            I_46 = c()
+            for(p in 1:(dim(genotypes)[1]-1)){
+                I_46[p] = -(1/sigma^2)*t(E[!extreme,])%*%(hfun0dash0(y_ic,alpha,betaG,sigma,1,1,gint,genotypes,genoprobs,p) -
+                                                              hfun0dash0(y_ic,alpha,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun00(y_ic,alpha,betaG,sigma,1,1,gint,genotypes,genoprobs))
+            }
+
+            # sigma-sigma
+
+            I_55 = -n/sigma2 + (3/sigma^4)*sum((y_cc - alpha  - g_cc%*%betaG)^2) +
+                (3/sigma^4)*sum(hfun00(y_ic,alpha,betaG,sigma,2,0,gint,genotypes,genoprobs)) -
+                (1/sigma^6)*sum(hfun00(y_ic,alpha,betaG,sigma,4,0,gint,genotypes,genoprobs) -
+                                    hfun00(y_ic,alpha,betaG,sigma,2,0,gint,genotypes,genoprobs)^2)
+
+            # sigma-genoprobs
+            I_56 = c()
+            for(p in 1:(dim(genotypes)[1]-1)){
+                I_56[p] = -(1/sigma^3)*sum(hfun0dash0(y_ic,alpha,betaG,sigma,2,0,gint,genotypes,genoprobs,p)) +
+                    (1/sigma^3)*sum(hfun0dash0(y_ic,alpha,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun00(y_ic,alpha,betaG,sigma,2,0,gint,genotypes,genoprobs))
+            }
+
+            # genoprobs-genoprobs
+            mp = dim(genotypes)[1]
+            I_66 = matrix(sum(as.vector(rowSums(g_cc - matrix(genotypes[mp,],ncol = dim(g_cc)[2],nrow=dim(g_cc)[1])))==0)/(genoprobs[mp]^2),ncol=(dim(genotypes)[1]-1),nrow=(dim(genotypes)[1]-1))
+            #I_66 = matrix(0,ncol=(dim(genotypes)[1]-1),nrow=(dim(genotypes)[1]-1))
+            for(p in 1:(dim(genotypes)[1]-1)){
+                for(p2 in 1:(dim(genotypes)[1]-1)){
+                    if(p==p2){
+                        I_66[p,p] = I_66[p,p] + sum(as.vector(rowSums(g_cc - matrix(genotypes[p,],ncol = dim(g_cc)[2],nrow=dim(g_cc)[1])))==0)/(genoprobs[p]^2) +
+                            sum(hfun0dash0(y_ic,alpha,betaG,sigma,0,0,gint,genotypes,genoprobs,p)^2)
+                    }else{
+                        I_66[p,p2] = I_66[p,p2] + sum(hfun0dash0(y_ic,alpha,betaG,sigma,0,0,gint,genotypes,genoprobs,p)*hfun0dash0(y_ic,alpha,betaG,sigma,0,0,gint,genotypes,genoprobs,p2))
+                    }
+                }
+            }
+
+            I11_1 = c(I_11,I_13,I_15,I_16)
+            I11_3 = cbind(t(I_13),I_33,t(I_35),I_36)
+            I11_5 = c(I_15,I_35,I_55,I_56)
+            I11_6 = cbind(I_16,t(I_36),I_56,I_66)
+            I11 = rbind(I11_1,I11_3,I11_5,I11_6)
+
+            I22 = I_44
+
+            I12 = c(I_14,I_34,I_45,I_46)
+
+            Sigma = (I22 - t(I12)%*%ginv(I11)%*%I12)
+
+            s = (sum((y_cc - alpha - g_cc%*%betaG)*eg) +
+                     sum(E[!extreme,]*hfun00(y_ic,alpha,betaG,sigma,1,1,gint,genotypes,genoprobs)))/sigma2
+            t = (s*s)/Sigma
+            pval = pchisq(t,1,lower.tail=FALSE)
+
+            result = list(t,pval)
+            names(result) = c("statistic","p.value")
+            return(result)
         }
 
-        I11_1 = c(I_11,I_12,I_13,I_15,I_16)
-        I11_2 = cbind(t(I_12),I_22,I_23,I_25,I_26)
-        I11_3 = cbind(t(I_13),t(I_23),I_33,t(I_35),I_36)
-        I11_5 = c(I_15,t(I_25),I_35,I_55,I_56)
-        I11_6 = cbind(I_16,t(I_26),t(I_36),I_56,I_66)
-        I11 = rbind(I11_1,I11_2,I11_3,I11_5,I11_6)
-
-        I22 = I_44
-
-        I12 = c(I_14,t(I_24),I_34,I_45,I_46)
-
-        Sigma = (I22 - t(I12)%*%ginv(I11)%*%I12)
-
-        s = (sum((y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG)*eg) +
-                 sum(E[!extreme,]*hfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs)))/sigma2
-        t = (s*s)/Sigma
-        pval = pchisq(t,1,lower.tail=FALSE)
-
-        result = list(t,pval)
-        names(result) = c("statistic","p.value")
-        return(result)
     }else if(confounder){
         ###############################################################
         # Confounding assumed
         ###############################################################
-        fit0 = epsfullloglikmaxcond(data,ng,cind,hessian = TRUE)
+        fit0 = epsAC.loglikmaxcond(data,ng,cind,hessian = TRUE)
         coefs = fit0[[2]][1:length(fit0[[2]])-1]
         alpha = coefs[1]
         betaE = coefs[2:(2+ne-1)]
@@ -348,18 +492,19 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
         gint = 1
         eg = G[extreme,]*E[extreme,]
 
+
         # alpha-alpha
         I_11 = (n/sigma^2) - (1/sigma^4)*sum(chfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs,uindex) -
                                                  chfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,uindex)^2)
 
         # alpha-betaE
-        I_12 = (1/sigma^2)*colSums(xe)-
+        I_12 = (1/sigma^2)*sum(xe)-
             (1/sigma^4)*t(chfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs,uindex) -
                               (chfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,uindex)^2))%*%x_ic
         # alpha-betaG
-        I_13 = (1/sigma^2)*colSums(g_cc) +
-            (1/sigma^2)*colSums(chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,uindex)) -
-            (1/sigma^4)*(colSums(chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs,uindex)) -
+        I_13 = (1/sigma^2)*sum(g_cc) +
+            (1/sigma^2)*sum(chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,uindex)) -
+            (1/sigma^4)*(sum(chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs,uindex)) -
                              t(chfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,uindex))%*%chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,uindex))
 
         # alpha-betaEG
@@ -422,8 +567,8 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
 
 
         # betaG-betaG
-        I_33 = (1/sigma^2)*t(g_cc)%*%g_cc + (1/sigma^2)*matrix(colSums(chfun2(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,uindex)),nrow=ng,ncol=ng) -
-            (1/sigma^4)*(matrix(colSums(chfun2(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs,uindex)),nrow=ng,ncol=ng) -
+        I_33 = (1/sigma^2)*t(g_cc)%*%g_cc + (1/sigma^2)*matrix(sum(chfun2(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,uindex)),nrow=ng,ncol=ng) -
+            (1/sigma^4)*(matrix(sum(chfun2(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs,uindex)),nrow=ng,ncol=ng) -
                              t(chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,uindex))%*%chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,uindex))
 
         # betaG-betaEG
@@ -432,8 +577,8 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
                              t(E[!extreme,]*chfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,1,1,gint,genotypes,genoprobs,uindex))%*%chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,uindex))
         # betaG-sigma
         I_35 = (2/sigma^3)*t(y_cc - alpha - x_cc%*%betaE - g_cc%*%betaG)%*%g_cc +
-            (2/sigma^3)*colSums(chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,uindex)) -
-            (1/sigma^5)*(colSums(chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,3,0,gint,genotypes,genoprobs,uindex)) -
+            (2/sigma^3)*sum(chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,uindex)) -
+            (1/sigma^5)*(sum(chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,3,0,gint,genotypes,genoprobs,uindex)) -
                              t(chfun0(y_ic,x_ic,alpha,betaE,betaG,sigma,2,0,gint,genotypes,genoprobs,uindex))%*%
                              chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,uindex))
 
@@ -443,7 +588,7 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
         for(u in 1:nu){
             t_36 = matrix(ncol=(dim(genotypes)[1]-1),nrow=ng)
             for(p in 1:(dim(genotypes)[1]-1)){
-                t_36[,p] = -(1/sigma^2)*colSums(chfun1dash(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,p,uindex,u)) +
+                t_36[,p] = -(1/sigma^2)*sum(chfun1dash(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,p,uindex,u)) +
                     (1/sigma^2)*t(chfun0dash(y_ic,x_ic,alpha,betaE,betaG,sigma,0,0,gint,genotypes,genoprobs,p,uindex,u))%*%chfun1(y_ic,x_ic,alpha,betaE,betaG,sigma,1,0,gint,genotypes,genoprobs,uindex)
             }
             I_36[,mati:(mati+(dim(genotypes)[1]-1)-1)] = t_36

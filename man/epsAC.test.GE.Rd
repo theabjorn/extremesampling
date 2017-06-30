@@ -2,7 +2,7 @@
 % Please edit documentation in R/epsAC_testGE.R
 \name{epsAC.test.GE}
 \alias{epsAC.test.GE}
-\title{Test for gene-environment associations under the EPS-full design}
+\title{Test for gene-environment associations under the EPS-AC design}
 \usage{
 epsAC.test.GE(nullmodel, G, E, confounder = FALSE, cx)
 }
@@ -27,7 +27,7 @@ default set to \code{FALSE}}
 \item{p.value}{the P-value}
 }
 \description{
-\code{epsfull.testGE} performs a likelihood ratio test for gene-environment
+\code{epsAC.test.GE} performs a likelihood ratio test for gene-environment
 interaction variables under the EPS-full design
 }
 \details{
