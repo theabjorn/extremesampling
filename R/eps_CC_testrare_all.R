@@ -110,6 +110,7 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
 
             Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
             s = t(y-alpha+sigma*h0)%*%g/sigma2
+
             t = s%*%ginv(Sigma)%*%t(s)
             pvalue = pchisq(t,ng,lower.tail=FALSE)
             statistic = t
@@ -187,6 +188,7 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
             Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
             s = t(y_r-alpha - x_r%*%beta)%*%gr/sigma2 + t(y_e-alpha - xbeta +sigma*h0)%*%ge/sigma2
 
+
             t = s%*%ginv(Sigma)%*%t(s)
             pvalue = pchisq(t,ng,lower.tail=FALSE)
             statistic = t
@@ -234,7 +236,6 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
 
             Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
             s = t(y_r-alpha)%*%gr/sigma2 + t(y_e-alpha+sigma*c(h0))%*%ge/sigma2
-
             t = s%*%ginv(Sigma)%*%t(s)
             pvalue = pchisq(t,ng,lower.tail=FALSE)
             statistic = t
