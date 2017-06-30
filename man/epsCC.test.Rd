@@ -58,7 +58,7 @@ y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
 u = quantile(y,probs = 3/4,na.rm=TRUE)
 l = quantile(y,probs = 1/4,na.rm=TRUE)
 extreme = (y < l) | (y >= u)
-# Create the EPS-only data set
+# Create the EPS complete-case data set
 y = y[extreme]; xe1 = xe1[extreme]; xe2 = xe2[extreme]
 xg1 = xg1[extreme]; xg2 = xg2[extreme]
 xg = as.matrix(cbind(xg1,xg2)); xe = as.matrix(cbind(xe1,xe2))

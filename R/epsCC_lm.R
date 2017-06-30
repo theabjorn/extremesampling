@@ -1,6 +1,6 @@
 #' Fit linear model to EPS-only data
 #' @description
-#' \code{epsonly.lm} fits a normal linear regression model to EPS-only data
+#' \code{epsCC.lm} fits a normal linear regression model to EPS-only data
 #' @param formula an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model to be fitted, see details
 #' @param cutoffs a vector \code{c(l,u)} of the lower and upper cut-offs used
@@ -57,11 +57,11 @@
 #' xg = as.matrix(cbind(xg1,xg2))
 #' xe = as.matrix(cbind(xe1,xe2))
 #'
-#' epsonly.lm(y~xe1+xe2+xg1+xg2,cutoffs = c(l,u))
-#' epsonly.lm(y~xe+xg,cutoffs = c(l,u))
-#' epsonly.lm(y~xe1+xe2+xg1+xg2+xe2*xg1,cutoffs = c(l,u))$coefficients
+#' epsCC.lm(y~xe1+xe2+xg1+xg2,cutoffs = c(l,u))
+#' epsCC.lm(y~xe+xg,cutoffs = c(l,u))
+#' epsCC.lm(y~xe1+xe2+xg1+xg2+xe2*xg1,cutoffs = c(l,u))$coefficients
 
-epsonly.lm = function(formula,cutoffs,randomindex){
+epsCC.lm = function(formula,cutoffs,randomindex){
     if(class(formula)!="formula"){
         stop("First argument must be of class formula")}
 
@@ -97,7 +97,7 @@ epsonly.lm = function(formula,cutoffs,randomindex){
             l = min(cutoffs)
             u = max(cutoffs)
 
-            model = epsonlyloglikmax(modeldata,cutoffs,hessian = TRUE)
+            model = epsCC.loglikmax(modeldata,cutoffs,hessian = TRUE)
 
             hessian = model[[1]]
             info = -1*ginv(hessian)
@@ -125,7 +125,7 @@ epsonly.lm = function(formula,cutoffs,randomindex){
             l = min(cutoffs)
             u = max(cutoffs)
 
-            model = epsonlyloglikmax(modeldata,cutoffs,hessian = TRUE)
+            model = epsCC.loglikmax(modeldata,cutoffs,hessian = TRUE)
 
             hessian = model[[1]]
             info = -1*ginv(hessian)
@@ -163,7 +163,7 @@ epsonly.lm = function(formula,cutoffs,randomindex){
             l = min(cutoffs)
             u = max(cutoffs)
 
-            model = epsonlyloglikmax(modeldata,cutoffs,randomindex = randomindex,hessian = TRUE)
+            model = epsCC.loglikmax(modeldata,cutoffs,randomindex = randomindex,hessian = TRUE)
 
             hessian = model[[1]]
             info = -1*ginv(hessian)
@@ -191,7 +191,7 @@ epsonly.lm = function(formula,cutoffs,randomindex){
             l = min(cutoffs)
             u = max(cutoffs)
 
-            model = epsonlyloglikmax(modeldata,cutoffs,randomindex = randomindex,hessian = TRUE)
+            model = epsCC.loglikmax(modeldata,cutoffs,randomindex = randomindex,hessian = TRUE)
 
             hessian = model[[1]]
             info = -1*ginv(hessian)

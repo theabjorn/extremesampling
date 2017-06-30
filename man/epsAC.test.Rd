@@ -2,7 +2,7 @@
 % Please edit documentation in R/eps_AC_test.R
 \name{epsAC.test}
 \alias{epsAC.test}
-\title{Score test EPS-CC}
+\title{Score test EPS-AC}
 \usage{
 epsAC.test(nullmodel, SNP, confounder = FALSE, cx)
 }
@@ -20,12 +20,12 @@ default set to \code{FALSE}}
 \item{cx}{optional vector of names of confounding (non-genetic) covariates}
 }
 \value{
-\code{epsfull.test} returns
+\code{epsAC.test} returns
 \item{statistic}{the score test statistic}
 \item{p.value}{the P-value}
 }
 \description{
-\code{epsCC.test} performs a score test for common genetic variants
+\code{epsAC.test} performs a score test for common genetic variants
 under the EPS all-case design
 }
 \details{

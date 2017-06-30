@@ -1,6 +1,5 @@
 #' Fit linear model to EPS-full data
 #' @description
-#' \code{epsfull.lm} fits a normal linear regression model to EPS-full data
 #' @param formula an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model to be fitted, see details
 #' @param hwe \code{TRUE} if Hardy-Weinberg equilibrium is assumed, default
@@ -67,13 +66,13 @@
 #' xe = as.matrix(cbind(xe1,xe2))
 #'
 #' # Fit model
-#' epsfull.lm(y~xe1+xe2+xg1+xg2)
+#' epsAC.lm(y~xe1+xe2+xg1+xg2)
 #' # Alternatives
-#' # epsfull.lm(y~xe+xg)
-#' # epsfull.lm(y~xe+xg,hwe = TRUE)
+#' # epsAC.lm(y~xe+xg)
+#' # epsAC.lm(y~xe+xg,hwe = TRUE)
 #'
 #' # Model with interaction term
-#' epsfull.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
+#' epsAC.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
 #'
 
 epsAC.lm = function(formula, hwe = FALSE, maf,
@@ -233,7 +232,7 @@ epsAC.lm = function(formula, hwe = FALSE, maf,
                     message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
                     data = cbind(y,xg)
                     ng = dim(as.matrix(xg))[2]
-                    model = epsfullloglikmax(data, ng, hwe = TRUE, maf = maf,
+                    model = epsAC.loglikmax(data, ng, hwe = TRUE, maf = maf,
                                              hessian = TRUE)
                     hessian = model[[1]]
                     info = -1*ginv(hessian)
@@ -260,7 +259,7 @@ epsAC.lm = function(formula, hwe = FALSE, maf,
                     message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
                     data = cbind(y,xg)
                     ng = dim(as.matrix(xg))[2]
-                    model = epsfullloglikmax(data, ng, hwe = TRUE,
+                    model = epsAC.loglikmax(data, ng, hwe = TRUE,
                                              hessian = TRUE)
                     params = model[[2]]
                     nparam = 1 + ng
@@ -298,7 +297,7 @@ epsAC.lm = function(formula, hwe = FALSE, maf,
                     # 1.1.2.1: MAF given
                     ###########################################################
                     message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequencies: ", toString(maf),sep = ""))
-                    model = epsfullloglikmax(data,ng, hwe = TRUE, maf = maf,
+                    model = epsAC.loglikmax(data,ng, hwe = TRUE, maf = maf,
                                              hessian = TRUE)
                     params = model[[2]]
                     nparam = 1 + ne + ng
@@ -324,7 +323,7 @@ epsAC.lm = function(formula, hwe = FALSE, maf,
                     # 1.1.2.2: MAF not given
                     ###########################################################
                     message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
-                    model = epsfullloglikmax(data, ng, hwe = TRUE,
+                    model = epsAC.loglikmax(data, ng, hwe = TRUE,
                                              hessian = TRUE)
                     params = model[[2]]
                     nparam = 1 + ne + ng
@@ -367,7 +366,7 @@ epsAC.lm = function(formula, hwe = FALSE, maf,
                 # 1.2.1: MAF given
                 ###########################################################
                 message(paste("Hardy-Weinberg equilibrium assumed with known minor allele frequency: ", toString(maf),sep = ""))
-                model = epsfullloglikmaxint(data, ng, interactind,
+                model = epsAC.loglikmaxint(data, ng, interactind,
                                             hwe = TRUE, maf = maf,
                                             hessian = TRUE)
                 params = model[[2]]
@@ -393,7 +392,7 @@ epsAC.lm = function(formula, hwe = FALSE, maf,
                 # 1.2.1: MAF not given
                 ###########################################################
                 message("Hardy-Weinberg equilibrium assumed, unknown minor allele frequency.")
-                model = epsfullloglikmaxint(data, ng, interactind,
+                model = epsAC.loglikmaxint(data, ng, interactind,
                                             hwe = TRUE,
                                             hessian = TRUE)
                 params = model[[2]]
@@ -431,7 +430,7 @@ epsAC.lm = function(formula, hwe = FALSE, maf,
                 ###############################################################
                 data = cbind(y,xg)
                 ng = dim(as.matrix(xg))[2]
-                model = epsfullloglikmax(data,ng,hessian = TRUE)
+                model = epsAC.loglikmax(data,ng,hessian = TRUE)
                 params = model[[2]]
                 nparam = 1 + ng
                 sigma = params[(nparam + 1)]
@@ -467,7 +466,7 @@ epsAC.lm = function(formula, hwe = FALSE, maf,
                     ###########################################################
                     # 2.1.1: No confounders
                     ###########################################################
-                    model = epsfullloglikmax(data, ng,hessian = TRUE)
+                    model = epsAC.loglikmax(data, ng,hessian = TRUE)
                     params = model[[2]]
                     nparam = 1 + ne + ng # alpha, betae, betag
                     sigma = params[(nparam + 1)]
@@ -494,7 +493,7 @@ epsAC.lm = function(formula, hwe = FALSE, maf,
                     #########################################################
                     # 2.1.1: Confounders
                     #########################################################
-                    model = epsfullloglikmaxcond(data, ng,cind = cind,
+                    model = epsAC.loglikmaxcond(data, ng,cind = cind,
                                                  hessian = TRUE,snpnames=covnames[snpid])
                     params = model[[2]]
                     nparam = 1 + ne + ng
@@ -538,7 +537,7 @@ epsAC.lm = function(formula, hwe = FALSE, maf,
                 ###############################################################
                 # 2.1.1: No confounders
                 ###############################################################
-                model = epsfullloglikmaxint(data, ng, interactind = interactind,hessian = TRUE)
+                model = epsAC.loglikmaxint(data, ng, interactind = interactind,hessian = TRUE)
                 params = model[[2]]
                 nparam = 1 + ne + ng + length(interactind)
                 sigma = params[(nparam + 1)]
@@ -565,7 +564,7 @@ epsAC.lm = function(formula, hwe = FALSE, maf,
                 ###############################################################
                 # 2.1.1: Confounders
                 ###############################################################
-                model = epsfullloglikmaxcondint(data, ng, cind = cind,
+                model = epsAC.loglikmaxcondint(data, ng, cind = cind,
                                                 interactind = interactind,
                                                 hessian = TRUE,snpnames=covnames[snpid])
                 params = model[[2]]
