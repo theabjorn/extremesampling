@@ -22,13 +22,13 @@ default set to \code{FALSE}}
 \item{cx}{optional vector of names of confounding (non-genetic) covariates}
 }
 \value{
-\code{epsfull.testGE} returns
+\code{epsAC.testGE} returns
 \item{statistic}{thescore test statistic}
 \item{p.value}{the P-value}
 }
 \description{
 \code{epsAC.test.GE} performs a likelihood ratio test for gene-environment
-interaction variables under the EPS-full design
+interaction variables under the EPS-AC design
 }
 \details{
 The \code{nullmodel} \code{\link[stats]{formula}} object is of the type
@@ -46,7 +46,7 @@ of the function gives the test statistic and p-value for the test of
 H0: b=0. The specific gene-environment interactions that should be
 tested is specified in \code{GE}.
 
-The EPS-full design is such that the SNP genotype is only observed
+The EPS-AC design is such that the SNP genotype is only observed
 for individuals with high and low values of the phenotype \code{y}.
 For remaining individuals, the unobserved genotype most be coded as NA.
 A SNP is assumed to have possible genotype 0, 1 or 2 according to the
@@ -76,11 +76,11 @@ y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
 u = quantile(y,probs = 3/4,na.rm=TRUE)
 l = quantile(y,probs = 1/4,na.rm=TRUE)
 extreme = (y < l) | (y >= u)
-# Create the EPS-full data set by setting
+# Create the EPS-AC data set by setting
 # the SNP values of non-extremes to NA
 xg1[!extreme] = NA
 xg2[!extreme] = NA
 xg = as.matrix(cbind(xg1,xg2))
 xe = as.matrix(cbind(xe1,xe2))
-epsfull.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
+epsAC.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
 }
