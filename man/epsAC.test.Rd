@@ -4,20 +4,16 @@
 \alias{epsAC.test}
 \title{Score test EPS-AC}
 \usage{
-epsAC.test(nullmodel, SNP, confounder = FALSE, cx)
+epsAC.test(nullmodel, xg, confounder)
 }
 \arguments{
 \item{nullmodel}{an object of class \code{\link[stats]{formula}}, that
 describes the linear regression model under the null hypothesis, see details}
 
-\item{SNP}{a matrix of variables to be tested against the null (NA for
+\item{xg}{a matrix of variables to be tested against the null (NA for
 not genotyped individuals)}
 
-\item{confounder}{\code{TRUE} if distribution of SNPs should be
-assumed dependent on other (non-genetic) covariates,
-default set to \code{FALSE}}
-
-\item{cx}{optional vector of names of confounding (non-genetic) covariates}
+\item{confounder}{(optional) vector of names of confounding (non-genetic) covariates}
 }
 \value{
 \code{epsAC.test} returns
@@ -36,24 +32,19 @@ xe is a non-genetic/environmental covariate (optional).
 The variables are taken from the environment that the
 function is called from.
 The null hypothesis bg=0 is tested for the model y=a+be*xe+bg*xg+e.
-The covariate \code{xg} is a SNP (single-nucleotide polymorphism). If
-SNP is a matrix, each SNP (column) is tested against the null model.
+The covariate xg is one or more, genetic markers where missing values
+are coded as NA. Missing-mechanism must be MCAR or MAR.
+If xg is a matrix, each variant (column) is tested against the null model.
 
-For the EPS all-case design, the SNP genotypes are only observed
-for individuals with extreme values of the phenotype \code{y}, and possibly
-some random samples. For remaining individuals, the unobserved genotype
-must be coded as NA.
-
-If confounder = TRUE, the genetic variables are assumed to have
-different distribution for different levels of other (non-genetic)
-covariates, these can be specified by a vector of names \code{cx}.
+Confounders are discrete covariates (xe) and the distribution of xg is
+modelled for each level of unique value of xe.
 }
 \examples{
 N = 5000 # Number of individuals in a population
 xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
 xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
-xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
+xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # xg
+xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # xg
 # Model parameters
 a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
 # Generate response y
@@ -63,9 +54,9 @@ u = quantile(y,probs = 3/4,na.rm=TRUE)
 l = quantile(y,probs = 1/4,na.rm=TRUE)
 extreme = (y < l) | (y >= u)
 # Create the EPS-full data set by setting
-# the SNP values of non-extremes to NA
+# the xg values of non-extremes to NA
 xg1[!extreme] = NA; xg2[!extreme] = NA; xg = as.matrix(cbind(xg1,xg2))
 xe = as.matrix(cbind(xe1,xe2))
 # Testing
-epsAC.test(y~xe1+xe2,SNP = xg)$p.value
+epsAC.test(y~xe1+xe2,xg = xg)$p.value
 }

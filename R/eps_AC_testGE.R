@@ -65,7 +65,7 @@ epsAC.test.GE = function(nullmodel,G,E,confounder){
 
     G = as.matrix(G)
     E = as.matrix(E)
-    if((dim(G)[2]>1) | (dim(E)[2]>1)){
+    if((dim(G)[2]>1)|(dim(E)[2]>1)){
         stop("G and E must be vectors of one genetic covariate and one environmental covariate")
     }
 

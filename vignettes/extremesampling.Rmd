@@ -85,16 +85,16 @@ tested against the null model `y = a + be*xe + e`.
 
 ```{r}
     # 1.1) Perform two-sided test for one genetic covariate at a time
-    epsCC.test(y~xe1+xe2, SNP=cbind(xg1,xg2), cutoffs=c(l,u))$p.value
+    epsCC.test(y~xe1+xe2, xg=cbind(xg1,xg2), cutoffs=c(l,u))$p.value
     # or using matrix form
-    # epsCC.test(y~xe, SNP=xg, cutoffs=c(l,u))$p.value
+    # epsCC.test(y~xe, xg=xg, cutoffs=c(l,u))$p.value
 ```
 
 Example 1.2) Test gene-environment interactions
 
 ```{r}
     # 1.2) Test gene-environment interaction
-    epsCC.test(y~xe1+xe2+xg1+xg2, SNP = xe1*xg1, cutoffs=c(l,u))$p.value
+    epsCC.test(y~xe1+xe2+xg1+xg2, xg = xe1*xg1, cutoffs=c(l,u))$p.value
 ```
 
 Next we consider fitting a linear regression model of the form
@@ -167,9 +167,9 @@ considered for inclusion into the  null model `y = a + be*xe + e`.
 
 ```{r}
     # 2.1) Perform score test for one genetic covariate at a time
-    epsAC.test(y~xe1+xe2, SNP=cbind(xg1,xg2))$p.value
+    epsAC.test(y~xe1+xe2, xg=cbind(xg1,xg2))$p.value
     # alternatively with matrix form
-    epsAC.test(y~xe, SNP=xg)$p.value
+    epsAC.test(y~xe, xg=xg)$p.value
 ```
 
 Example 2.2) Test a gene-environment interaction
@@ -248,9 +248,9 @@ are found when confounding is not accounted for.
     xg = cbind(xg1,xg2)
     
     # Test (with confounding)
-    epsAC.test(y~xe1+xe2, SNP=xg, confounder=TRUE, cx=c("xe2"))
+    epsAC.test(y~xe1+xe2, xg=xg, confounder=c("xe2"))
     
     # Test (without confounding)
-    epsAC.test(y~xe1+xe2, SNP=xg)
+    epsAC.test(y~xe1+xe2, xg=xg)
 ```
 

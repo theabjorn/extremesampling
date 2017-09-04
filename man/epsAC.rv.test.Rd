@@ -4,27 +4,22 @@
 \alias{epsAC.rv.test}
 \title{Score test EPS-AC rare variants}
 \usage{
-epsAC.rv.test(nullmodel, RV, confounder = FALSE, cx, method = "naive",
-  weights)
+epsAC.rv.test(nullmodel, xg, confounder, method = "naive", weights)
 }
 \arguments{
 \item{nullmodel}{an object of class \code{\link[stats]{formula}}, that
 describes the linear regression model under the null hypothesis}
 
-\item{RV}{a matrix of variables to be tested against the null (NA for
+\item{xg}{a matrix of variables to be tested against the null (NA for
 not genotyped individuals)}
 
-\item{confounder}{\code{TRUE} if distribution of SNPs should be
-assumed dependent on other (non-genetic) covariates,
-default set to \code{FALSE}}
-
-\item{cx}{optional vector of names of confounding (non-genetic) covariates}
+\item{confounder}{(optional) vector of names of confounding (non-genetic) covariates}
 
 \item{method}{testing the burden using \code{naive}, \code{collapsing} or
-\code{lmm} method, see details}
+\code{varcomp} method, see details}
 
 \item{weights}{optional weights for the \code{collapsing} or
-\code{lmm} method}
+\code{varcomp} method}
 }
 \value{
 \code{epsAC.rv.test} returns for the whole burden of variants:
@@ -43,20 +38,16 @@ xe is a non-genetic/environmental covariate (optional).
 The variables are taken from the environment that the
 function is called from.
 The null hypothesis bg=0 is tested for the model y=a+be*xe+bg*xg+e.
-The covariate \code{xg} is a burden of several rare genetic variants.
+The covariate \code{xg} is a burden of several rare genetic variants,
+where missing values are coded as NA. Missing-mechanism must be MCAR or MAR.
+Missing-mechanism assumed equal for all genetic variants.
 
-For the EPS all-case design, the SNP genotypes are only observed
-for individuals with extreme values of the phenotype \code{y}, and possibly
-some random samples. For remaining individuals, the unobserved genotype
-must be coded as NA.
-
-If confounder = TRUE, the genetic variables are assumed to have
-different distribution for different levels of other (non-genetic)
-covariates, these can be specified by a vector of names \code{cx}.
+Confounders are discrete covariates (xe) and the distribution of xg is
+modelled for each level of unique value of xe.
 
 The \code{naive} method uses a standard score test to test the burden,
 the \code{collaps} method tests the (weighted) sum of all variants in the
-burden, while the \code{lmm} method is a (weighted) variance
+burden, while the \code{varcomp} method is a (weighted) variance
 component score test.
 }
 \examples{
@@ -64,9 +55,9 @@ N = 5000 # Number of individuals in a population
 xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
 xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
 maf1 = 0.01; maf2 = 0.02; maf3 = 0.005
-xg1 = sample(c(0,1,2),N,c((1-maf1)^2,2*maf1*(1-maf1),maf1^2), replace = TRUE) # RV
-xg2 = sample(c(0,1,2),N,c((1-maf2)^2,2*maf2*(1-maf2),maf2^2), replace = TRUE) # RV
-xg3 = sample(c(0,1,2),N,c((1-maf3)^2,2*maf3*(1-maf3),maf3^2), replace = TRUE) # RV
+xg1 = sample(c(0,1,2),N,c((1-maf1)^2,2*maf1*(1-maf1),maf1^2), replace = TRUE) # xg
+xg2 = sample(c(0,1,2),N,c((1-maf2)^2,2*maf2*(1-maf2),maf2^2), replace = TRUE) # xg
+xg3 = sample(c(0,1,2),N,c((1-maf3)^2,2*maf3*(1-maf3),maf3^2), replace = TRUE) # xg
 # Model parameters
 a = 50; be1 = 5; be2 = 8; bg1 = -0.3; bg2 = 0.6; sigma = 2
 # Generate response y
@@ -82,10 +73,10 @@ xe = as.matrix(cbind(xe1,xe2))
 
 # Testing
 # Naive test
-epsAC.rv.test(y~xe,RV=xg)
+epsAC.rv.test(y~xe,xg=xg)
 # Collapsing test
-epsAC.rv.test(y~xe,RV=xg,method = "collaps",weights)
+epsAC.rv.test(y~xe,xg=xg,method = "collaps",weights)
 # Variance component test (assume linear mixed model)
-epsAC.rv.test(y~xe,RV=xg,method = "lmm",weights)
+epsAC.rv.test(y~xe,xg=xg,method = "varcomp",weights)
 
 }
