@@ -4,15 +4,15 @@
 #' rare genetic variants under the EPS complete-case design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis
-#' @param RV a matrix of genetic variants to be tested against the null
+#' @param xg a matrix of genetic variants to be tested against the null
 #' @param cutoffs a vector \code{c(l,u)} of the lower and upper cut-offs used
 #' for extreme sampling
 #' @param randomindex a binary vector that indicates if samples are random
 #' or extreme
 #' @param method testing the burden using \code{naive}, \code{collapsing} or
-#' \code{lmm} method, see details
+#' \code{varcomp} method, see details
 #' @param weights optional weights for the \code{collapsing} or
-#' \code{lmm} method
+#' \code{varcomp} method
 #'
 #' @return \code{epsCC.rv.test} returns for the whole burden of variants:
 #' \item{statistic}{the score test statistic}
@@ -35,7 +35,7 @@
 #'
 #' The \code{naive} method uses a standard score test to test the burden,
 #' the \code{collaps} method tests the (weighted) sum of all variants in the
-#' burden, while the \code{lmm} method is a (weighted) variance
+#' burden, while the \code{varcomp} method is a (weighted) variance
 #' component score test.
 #'
 #' @import MASS stats
@@ -45,9 +45,9 @@
 #' xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
 #' xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
 #' maf1 = 0.01; maf2 = 0.02; maf3 = 0.005
-#' xg1 = sample(c(0,1,2),N,c((1-maf1)^2,2*maf1*(1-maf1),maf1^2), replace = TRUE) # RV
-#' xg2 = sample(c(0,1,2),N,c((1-maf2)^2,2*maf2*(1-maf2),maf2^2), replace = TRUE) # RV
-#' xg3 = sample(c(0,1,2),N,c((1-maf3)^2,2*maf3*(1-maf3),maf3^2), replace = TRUE) # RV
+#' xg1 = sample(c(0,1,2),N,c((1-maf1)^2,2*maf1*(1-maf1),maf1^2), replace = TRUE) # xg
+#' xg2 = sample(c(0,1,2),N,c((1-maf2)^2,2*maf2*(1-maf2),maf2^2), replace = TRUE) # xg
+#' xg3 = sample(c(0,1,2),N,c((1-maf3)^2,2*maf3*(1-maf3),maf3^2), replace = TRUE) # xg
 #' # Model parameters
 #' a = 50; be1 = 5; be2 = 8; bg1 = -0.3; bg2 = 0.6; sigma = 2
 #' # Generate response y
@@ -63,14 +63,14 @@
 #'
 #' # Testing
 #' # Naive test
-#' epsCC.rv.test(y~xe,RV=xg,cutoffs = c(l,u))
+#' epsCC.rv.test(y~xe,xg=xg,cutoffs = c(l,u))
 #' # Collapsing test
-#' epsCC.rv.test(y~xe,RV=xg,cutoffs = c(l,u),method = "collaps",weights)
+#' epsCC.rv.test(y~xe,xg=xg,cutoffs = c(l,u),method = "collaps",weights)
 #' # Variance component test (assume linear mixed model)
-#' epsCC.rv.test(y~xe,RV=xg,cutoffs = c(l,u),method = "lmm",weights)
+#' epsCC.rv.test(y~xe,xg=xg,cutoffs = c(l,u),method = "varcomp",weights)
 #'
 
-epsCC.rv.test = function(nullmodel,RV,cutoffs,randomindex,method = "naive",weights){
+epsCC.rv.test = function(nullmodel,xg,cutoffs,randomindex,method = "naive",weights){
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
 
@@ -96,25 +96,25 @@ epsCC.rv.test = function(nullmodel,RV,cutoffs,randomindex,method = "naive",weigh
     l = min(cutoffs)
     u = max(cutoffs)
 
-    RV = as.matrix(RV)
-    # if(dim(RV)[2]<2){
-    #     stop("RV must be a set of more than one genetic variant")
+    xg = as.matrix(xg)
+    # if(dim(xg)[2]<2){
+    #     stop("xg must be a set of more than one genetic variant")
     # }
 
     if(missing(weights)){
-        weights = rep(1,dim(RV)[2])
+        weights = rep(1,dim(xg)[2])
     }
 
     if(method == "naive"){
-        epsCC.rv.test.naive(epsdata0,covariates0,RV,isx,l,u,rsample, randomindex)
+        epsCC.rv.test.naive(epsdata0,covariates0,xg,isx,l,u,rsample, randomindex)
     }else if(method == "collaps"){
-        g = rep(0,dim(RV)[1])
-        for(c in 1:dim(RV)[2]){
-            g = g + c(weights[c])*c(RV[,c])
+        g = rep(0,dim(xg)[1])
+        for(c in 1:dim(xg)[2]){
+            g = g + c(weights[c])*c(xg[,c])
         }
-        epsCC.test(nullmodel,SNP=g,cutoffs,randomindex)
-    }else if(method == "lmm"){
-        epsCC.rv.test.lmm(epsdata0,covariates0,RV,isx,l,u,rsample,randomindex,weights)
+        epsCC.test(nullmodel,xg=g,cutoffs,randomindex)
+    }else if(method == "varcomp"){
+        epsCC.rv.test.varcomp(epsdata0,covariates0,xg,isx,l,u,rsample,randomindex,weights)
     }
 }
 

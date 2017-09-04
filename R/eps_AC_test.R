@@ -4,12 +4,9 @@
 #' under the EPS all-case design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis, see details
-#' @param SNP a matrix of variables to be tested against the null (NA for
+#' @param xg a matrix of variables to be tested against the null (NA for
 #' not genotyped individuals)
-#' @param confounder \code{TRUE} if distribution of SNPs should be
-#' assumed dependent on other (non-genetic) covariates,
-#' default set to \code{FALSE}
-#' @param cx optional vector of names of confounding (non-genetic) covariates
+#' @param confounder (optional) vector of names of confounding (non-genetic) covariates
 #' @return \code{epsAC.test} returns
 #' \item{statistic}{the score test statistic}
 #' \item{p.value}{the P-value}
@@ -21,17 +18,12 @@
 #' The variables are taken from the environment that the
 #' function is called from.
 #' The null hypothesis bg=0 is tested for the model y=a+be*xe+bg*xg+e.
-#' The covariate \code{xg} is a SNP (single-nucleotide polymorphism). If
-#' SNP is a matrix, each SNP (column) is tested against the null model.
+#' The covariate xg is one or more, genetic markers where missing values
+#' are coded as NA. Missing-mechanism must be MCAR or MAR.
+#' If xg is a matrix, each variant (column) is tested against the null model.
 #'
-#' For the EPS all-case design, the SNP genotypes are only observed
-#' for individuals with extreme values of the phenotype \code{y}, and possibly
-#' some random samples. For remaining individuals, the unobserved genotype
-#' must be coded as NA.
-#'
-#' If confounder = TRUE, the genetic variables are assumed to have
-#' different distribution for different levels of other (non-genetic)
-#' covariates, these can be specified by a vector of names \code{cx}.
+#' Confounders are discrete covariates (xe) and the distribution of xg is
+#' modelled for each level of unique value of xe.
 #'
 #' @import MASS stats
 #' @export
@@ -39,8 +31,8 @@
 #' N = 5000 # Number of individuals in a population
 #' xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
 #' xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
-#' xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
+#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # xg
+#' xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # xg
 #' # Model parameters
 #' a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
 #' # Generate response y
@@ -50,19 +42,19 @@
 #' l = quantile(y,probs = 1/4,na.rm=TRUE)
 #' extreme = (y < l) | (y >= u)
 #' # Create the EPS-full data set by setting
-#' # the SNP values of non-extremes to NA
+#' # the xg values of non-extremes to NA
 #' xg1[!extreme] = NA; xg2[!extreme] = NA; xg = as.matrix(cbind(xg1,xg2))
 #' xe = as.matrix(cbind(xe1,xe2))
 #' # Testing
-#' epsAC.test(y~xe1+xe2,SNP = xg)$p.value
+#' epsAC.test(y~xe1+xe2,xg = xg)$p.value
 
-epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
+epsAC.test = function(nullmodel, xg, confounder){
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
 
-    if(is.null(colnames(SNP))){
-        SNP = as.matrix(SNP)
-        colnames(SNP) = paste0("SNP",1:dim(SNP)[2])}
+    if(is.null(colnames(xg))){
+        xg = as.matrix(xg)
+        colnames(xg) = paste0("xg",1:dim(xg)[2])}
 
     options(na.action="na.pass")
         epsdata0 = model.frame(nullmodel)
@@ -72,6 +64,9 @@ epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
     y = epsdata0[,1]
     n = length(y)
 
+    conf = FALSE
+    if(!missing(confounder)){conf = TRUE}
+
     isxe = FALSE
     if(dim(covariates0)[2]>0){
         isxe = TRUE
@@ -80,15 +75,14 @@ epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
             colnames(covariates0) = colnames(epsdata0)[2]
         }
         # Confounders
-        if(confounder){
-            if(missing(cx)){cx = colnames(covariates0)
-            }else if(is.na(match(cx,colnames(covariates0)))){
+        if(conf){
+            if(is.na(match(confounder,colnames(covariates0)))){
                 stop("The name of the confounder given is not the name of a covariate.")
             }
-            message(paste("Confounders: ", toString(cx),sep=""))
-            cind = match(cx,colnames(covariates0))
+            message(paste("Confounders: ", toString(confounder),sep=""))
+            cind = match(confounder,colnames(covariates0))
             xecind = as.matrix(covariates0[,cind])
-            for(j in 1:length(cx)){
+            for(j in 1:length(confounder)){
                 if(length(unique(xecind[,j])) > 10){
                     stop("Only discrete confounders with less than or equal to 10 unique levels are accepted as confounders.
                          Please recode you confounder to satisfy this.")
@@ -97,8 +91,8 @@ epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
         }
     }
 
-    totest = colnames(SNP)
-    xg = as.matrix(SNP)
+    totest = colnames(xg)
+    xg = as.matrix(xg)
     ng = dim(xg)[2]
 
 
@@ -112,16 +106,13 @@ epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
     colnames(statistic) = "t"
     colnames(pvalue) = "p.value"
 
-    if(isxe & !confounder){
+    if(isxe & !conf){
         ###############################################################
         # Environmental covariates (xe) present in the null model
         # No confounding assumed
         ###############################################################
         fit = lm(y~xe) # Fit under H0
         z = fit$residuals
-        coefs = fit$coef
-        alpha = coefs[1]
-        beta = coefs[2:length(coefs)]
         sigma2 = sum(z^2)/n
         sigma = sqrt(sigma2)
 
@@ -137,14 +128,16 @@ epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
             eg = mean(g)
             varg = var(g)
 
-            egvec = rep(eg,n)
+            gm = rep(eg,n)
+            gm[extreme] = g
 
-            sig1 = (t(egvec)%*%(Ie-He)%*%egvec)/sigma2
-            sig2 = varg*(sum(z[extreme]^2) - (1/n_cc)*(sum(z[extreme]))^2)/(sigma2^2)
+            var1 = (t(gm)%*%(Ie-He)%*%gm)/sigma2
+            var2 = varg*(sum(z[!extreme]^2) - sigma2*(n-n_cc) - (1/n_cc)*(sum(z[!extreme]))^2)/(sigma2^2)
 
-            Sigma = sig1 + sig2
+            Sigma = var1 - var2
 
-            s = (sum(z[extreme]*g) +sum(z[!extreme]*eg))/sigma2
+            s = (t(gm)%*%(Ie-He)%*%y)/sigma2
+
             t = (s*s)/Sigma
             pval = pchisq(t,1,lower.tail=FALSE)
 
@@ -154,16 +147,13 @@ epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
         result = list(statistic,pvalue)
         names(result) = c("statistic","p.value")
         return(result)
-    }else if(isxe & confounder){
+    }else if(isxe & conf){
         ###############################################################
         # Environmental covariates (xe) present in the null model
         # Confounding assumed
         ###############################################################
         fit = lm(y~xe) # Fit under H0
         z = fit$residuals
-        coefs = fit$coef
-        alpha = coefs[1]
-        beta = coefs[2:length(coefs)]
         sigma2 = sum(z^2)/n
         sigma = sqrt(sigma2)
 
@@ -182,9 +172,13 @@ epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
             if(nu != dim(as.matrix(unique(xe[,cind])))[1]){
                 warning("All unique levels of confounder not found in extreme sample")
             }
-            uindex = list()
+            uindex_all = list()
+            uindex_cc = list()
+            uindex_ic = list()
             for(u in 1:nu){
-                uindex[[u]] = (xe[extreme,cind] == ux[u,])
+                uindex_all[[u]] = (xe[,cind] == ux[u,])
+                uindex_cc[[u]] = (xe[extreme,cind] == ux[u,])
+                uindex_ic[[u]] = (xe[!extreme,cind] == ux[u,])
             }
 
             eg = c()
@@ -192,31 +186,33 @@ epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
             egvec = rep(0,n)
 
             for(u in 1:nu){
-                uind = uindex[[u]]
-                allind = (xe[,cind] == ux[u,])
-
+                uind = uindex_cc[[u]]
+                allind = uindex_all[[u]]
                 egvec[allind] = mean(g[uind])
-
                 eg[u] = mean(g[uind])
                 varg[u] = var(g[uind])
             }
 
-            sig1 = (t(egvec)%*%(Ie-He)%*%egvec)/sigma2
-            sig2 = 0
+            gm = rep(0,n)
+            gm[extreme] = g
+            gm[!extreme] = egvec[!extreme]
 
-            s = sum(z[extreme]*g)
+            var1 = (t(gm)%*%(Ie-He)%*%gm)/sigma2
 
+            var2 = 0
             for(u in 1:nu){
-                uind = uindex[[u]]
-                n_uc = length(z[extreme][uind])
-                sig2 = sig2 + varg[u]*(sum(z[extreme][uind]^2) - (1/n_uc)*(sum(z[extreme][uind]))^2)/(sigma2^2)
+                uind_ic = uindex_ic[[u]]
+                uind_cc = uindex_cc[[u]]
+                uind_all = uindex_all[[u]]
 
-                tempind = (xe[!extreme,cind] == ux[u,])
-                s = s + sum(z[!extreme][tempind]*eg[u])
+                n_uic = length(z[!extreme][uind_ic])
+                n_ucc = length(z[extreme][uind_cc])
+
+                var2 = var2 + varg[u]*(sum(z[!extreme][uind_ic]^2) - sigma2*(n_uic) - (1/n_ucc)*(sum(z[!extreme][uind_ic]))^2)/(sigma2^2)
             }
 
-            s = s/sigma2
-            Sigma = sig1 + sig2
+            Sigma = var1 - var2
+            s = (t(gm)%*%(Ie-He)%*%y)/sigma2
 
             t = (s*s)/Sigma
             pval = pchisq(t,1,lower.tail=FALSE)
@@ -237,6 +233,10 @@ epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
         sigma2 = sum(z^2)/n
         sigma = sqrt(sigma2)
 
+        Xe = rep(1,n)
+        He = Xe%*%ginv(t(Xe)%*%Xe)%*%t(Xe)
+        Ie = diag(1,nrow = n, ncol = n)
+
         for(i in 1:ng){
             extreme = !is.na(xg[,i])
             g = as.matrix(xg[extreme,i])
@@ -245,11 +245,16 @@ epsAC.test = function(nullmodel, SNP, confounder = FALSE, cx){
             eg = mean(g)
             varg = var(g)
 
-            sig2 = varg*(sum(z[extreme]^2) - (1/n_cc)*(sum(z[extreme]))^2)/(sigma2^2)
+            gm = rep(eg,n)
+            gm[extreme] = g
 
-            Sigma = sig2
+            var1 = (t(gm)%*%(Ie-He)%*%gm)/sigma2
+            var2 = varg*(sum(z[!extreme]^2) - sigma2*(n-n_cc) - (1/n_cc)*(sum(z[!extreme]))^2)/(sigma2^2)
 
-            s = (sum(z[extreme]*g) +sum(z[!extreme]*eg))/sigma2
+            Sigma = var1 - var2
+
+            s = (t(gm)%*%(Ie-He)%*%y)/sigma2
+
             t = (s*s)/Sigma
             pval = pchisq(t,1,lower.tail=FALSE)
 

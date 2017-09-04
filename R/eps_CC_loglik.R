@@ -1,4 +1,4 @@
-# Log-likelihood function for EPS-only
+# Log-likelihood function for EPS-CC
 
 epsCC.loglik = function(parameters,data,cutoffs){
     param = parameters
@@ -91,5 +91,31 @@ epsCC.loglik_z_rand = function(parameters,data,cutoffs,randomindex){
     z_r = (y_r-alpha)/sigma
 
     ll = sum(log(dnorm(z_r)/sigma)) + sum(log(dnorm(z)/sigma)-log(1-pnorm(zu)+pnorm(zl)))
+    return(ll)
+}
+
+
+#######################################################
+# EPS-CC loglik for secondary phenotype W
+#######################################################
+
+epsCC.loglik.W = function(parameters,data){
+    param = parameters
+    len = dim(data)[2]
+
+    w = data[,1]
+    x = as.matrix(data[,2:(len-1)])
+    gamma = data[,len]
+    n = length(w)
+
+    lenp = length(param)
+    alpha = param[1]
+    beta = param[2:(lenp-2)]
+    tau = param[(lenp)-1]; sigma2 = exp(tau); sigma = sqrt(sigma2)
+    tmp = param[(lenp)]; rho = exp(tmp)/(1+exp(tmp))
+
+    z = (w-alpha - x%*%beta - sigma*rho*gamma)
+
+    ll = -(n/2)*log(sigma2) - (n/2)*log(1-rho^2) - 0.5*(1/sigma2)*(1/(1-rho^2))*sum(z^2)
     return(ll)
 }

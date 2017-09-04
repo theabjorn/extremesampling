@@ -7,10 +7,7 @@
 #' (including the genetic covariate)
 #' @param G The genetic covariate in the GE interaction
 #' @param E The environmental covariate in the GE interaction
-#' @param confounder \code{TRUE} if distribution of SNPs should be
-#' assumed dependent on other (non-genetic) covariates,
-#' default set to \code{FALSE}
-#' @param cx optional vector of names of confounding (non-genetic) covariates
+#' @param confounder (optional) vector of names of confounding (non-genetic) covariates
 #' @return \code{epsAC.testGE} returns
 #' \item{statistic}{thescore test statistic}
 #' \item{p.value}{the P-value}
@@ -19,57 +16,41 @@
 #' y~xe+xg, which describes a regression model, y=a+be*xe+bg*xg+e
 #' assuming a normal distribution for the residuals (e). The covariate
 #' xe is a non-genetic/environmental covariate (optional).
-#' The covariate xg is a SNP (single-nucleotide polymorphism).
-#' The variables are taken from the environment that the
-#' function is called from.
-#' Both xe and xg can be matrices.
+#' The covariate xg is one or more, genetic markers where missing values
+#' are coded as NA. Missing-mechanism must be MCAR or MAR.
+#'
+#' Confounders are discrete covariates (xe) and the distribution of xg is
+#' modelled for each level of unique value of xe.
 #'
 #' The test considers a regression model y=a+be*xe+bg*xg+b*xe*xg+e,
 #' where b=0 under the null hypothesis. The output
 #' of the function gives the test statistic and p-value for the test of
-#' H0: b=0. The specific gene-environment interactions that should be
-#' tested is specified in \code{GE}.
+#' H0: b=0. The genetic covarite (G) and the environmental covariate (E) for
+#' the interaction must be specified, G with missing values coded as NA and
+#' E with no missing values. G must also be included in the null model.
 #'
-#' The EPS-AC design is such that the SNP genotype is only observed
-#' for individuals with high and low values of the phenotype \code{y}.
-#' For remaining individuals, the unobserved genotype most be coded as NA.
-#' A SNP is assumed to have possible genotype 0, 1 or 2 according to the
-#' number of minor-alleles. The distribution of the genotype is assumed
-#' unknown and multinomially distributed. I.e. P(xg=0) = p0, P(xg=1) = p1,
-#' and P(xg=2) = p2 = 1-p0-p1.
-#' Hardy-Weinberg equilibrium with known or uknown MAF can be assumed,
-#' then p0 = (1-q)^2, p1 = 2q(1-q) and p2 = q^2, where q is the MAF.
-#' The parameters p0, p1, p2 can be given in \code{gfreq} if they are known.
-#'
-#' If confounder = TRUE, the genetic variables are assumed to be
-#' multinomally distributed, with different distribution
-#' for different levels of other (non-genetic) covariates, these can
-#' be specified by a vector of names \code{cx}.
 #' @import MASS stats
 #' @export
 #' @examples
 #' N = 5000 # Number of individuals in a population
 #' xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
 #' xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
-#' xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
+#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # xg
 #' # Model parameters
 #' a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
 #' # Generate response y
-#' y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
+#' y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1, sd = sigma)
 #' # Identify extremes, here upper and lower 25% of population
 #' u = quantile(y,probs = 3/4,na.rm=TRUE)
 #' l = quantile(y,probs = 1/4,na.rm=TRUE)
 #' extreme = (y < l) | (y >= u)
 #' # Create the EPS-AC data set by setting
-#' # the SNP values of non-extremes to NA
+#' # the xg values of non-extremes to NA
 #' xg1[!extreme] = NA
-#' xg2[!extreme] = NA
-#' xg = as.matrix(cbind(xg1,xg2))
-#' xe = as.matrix(cbind(xe1,xe2))
-#' epsAC.testGE(y~xe1+xe2+xg1+xg2,GE = c("xe1:xg1"))$p.value
+#' nullmodel = y~xe1+xe2+g1
+#' epsAC.test.GE(nullmodel, G = g1, E = xe1)
 
-epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
+epsAC.test.GE = function(nullmodel,G,E,confounder){
 
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
@@ -84,28 +65,32 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
 
     G = as.matrix(G)
     E = as.matrix(E)
-    # if((dim(G)[2]>1) | (dim(E)[2]>1)){
-    #     stop("G and E must be vectors of one genetic covariate and one environmental covariate")
-    # }
+    if((dim(G)[2]>1) | (dim(E)[2]>1)){
+        stop("G and E must be vectors of one genetic covariate and one environmental covariate")
+    }
 
     covnames = colnames(covariates0)
 
-    # which main effects are SNPs and which are environment?
-    snpid = c()
+    conf = FALSE
+    if(!missing(confounder)){conf = TRUE}
+
+
+    # which main effects are xgs and which are environment?
+    xgid = c()
     xid = c()
     ncov = length(covnames)
     for(c in 1:ncov){
         if(sum(is.na(covariates0[,c])) > 0){
-            snpid[length(snpid)+1] = c
+            xgid[length(xgid)+1] = c
         }else if(sum(is.na(covariates0[,c])) == 0){
             xid[length(xid)+1] = c
         }
     }
 
-    xg = as.matrix(covariates0[,snpid])
+    xg = as.matrix(covariates0[,xgid])
     xe = as.matrix(covariates0[,xid])
     colnames(xe) = colnames(covariates0)[xid]
-    colnames(xg) = colnames(covariates0)[snpid]
+    colnames(xg) = colnames(covariates0)[xgid]
     data = cbind(y,xe,xg)
     ng = dim(xg)[2]
     ne = dim(xe)[2]
@@ -116,15 +101,14 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
     isxe = TRUE
     if(ne == 0){isxe = FALSE}
 
-    if(confounder){
-        if(missing(cx)){cx = colnames(xe)
-        }else if(is.na(match(cx,colnames(xe)))){
+    if(conf){
+        if(is.na(match(confounder,colnames(xe)))){
             stop("The name of the confounder given is not the name of a covariate.")
         }
-        message(paste("Confounders: ", toString(cx),sep=""))
-        cind = match(cx,colnames(xe))
+        message(paste("Confounders: ", toString(confounder),sep=""))
+        cind = match(confounder,colnames(xe))
         xecind = as.matrix(xe[,cind])
-        for(j in 1:length(cx)){
+        for(j in 1:length(confounder)){
             if(length(unique(xecind[,j])) > 10){
                 stop("Only discrete confounders with less than or equal to 10 unique levels are accepted as confounders.")
             }
@@ -141,7 +125,7 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
     n_cc = length(y_cc)
     n_ic = length(y_ic)
 
-    if(confounder){
+    if(conf){
         ux = as.matrix(unique(x_ic[,cind]))
         nu = dim(ux)[1]
         if(nu != dim(as.matrix(unique(xe[,cind])))[1]){
@@ -156,7 +140,7 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
     }
 
 
-    if(!confounder){
+    if(!conf){
         ###############################################################
         # No confounding assumed
         ###############################################################
@@ -474,7 +458,7 @@ epsAC.test.GE = function(nullmodel,G,E,confounder = FALSE, cx){
             return(result)
         }
 
-    }else if(confounder){
+    }else if(conf){
         ###############################################################
         # Confounding assumed
         ###############################################################

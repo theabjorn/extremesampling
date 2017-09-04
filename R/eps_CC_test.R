@@ -4,7 +4,7 @@
 #' under the EPS complete-case design
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis
-#' @param SNP a matrix of genetic variants to be tested against the null
+#' @param xg a matrix of genetic variants to be tested against the null
 #' @param cutoffs a vector \code{(l,u)} of the lower and upper cut-off used
 #' for extreme sampling
 #' @param randomindex a binary vector that indicates if samples are random
@@ -20,10 +20,9 @@
 #' The variables are taken from the environment that the
 #' function is called from.
 #' The null hypothesis bg=0 is tested for the model y=a+be*xe+bg*xg+e.
-#' The covariate \code{xg} is a SNP (single-nucleotide polymorphism). If
-#' SNP is a matrix, each SNP (column) is tested against the null model.
+#' The covariate xg is one or more genetic markers.
 #'
-#' For the EPS complete-case design, the data is only available
+#' Variables are only available
 #' for individuals with high and low values of the phenotype \code{y};
 #' (\code{y < l} or \code{y > u}), and potentialy some randomly sampled
 #' individuals. The cut-offs \code{l} and \code{u} that specify the
@@ -35,8 +34,8 @@
 #' N = 5000 # Number of individuals in a population
 #' xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
 #' xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
-#' xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
+#' xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # xg
+#' xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # xg
 #' # Model parameters
 #' a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
 #' # Generate response y
@@ -51,9 +50,9 @@
 #' xg = as.matrix(cbind(xg1,xg2)); xe = as.matrix(cbind(xe1,xe2))
 #'
 #' # Testing
-#' epsCC.test(y~xe,SNP=xg,cutoffs = c(l,u))
+#' epsCC.test(y~xe,xg=xg,cutoffs = c(l,u))
 
-epsCC.test = function(nullmodel,SNP,cutoffs,randomindex){
+epsCC.test = function(nullmodel,xg,cutoffs,randomindex){
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
 
@@ -66,9 +65,9 @@ epsCC.test = function(nullmodel,SNP,cutoffs,randomindex){
         rsample = FALSE
     }
 
-    if(is.null(colnames(SNP))){
-        SNP = as.matrix(SNP)
-        colnames(SNP) = paste0("SNP",1:dim(SNP)[2])}
+    if(is.null(colnames(xg))){
+        xg = as.matrix(xg)
+        colnames(xg) = paste0("xg",1:dim(xg)[2])}
 
     options(na.action="na.pass")
         epsdata0 = model.frame(nullmodel)
@@ -95,8 +94,8 @@ epsCC.test = function(nullmodel,SNP,cutoffs,randomindex){
         if(sum((y>l & y<u))>0){
             stop("Incorrect data format")}
 
-        totest = colnames(SNP)
-        g = as.matrix(SNP)
+        totest = colnames(xg)
+        g = as.matrix(xg)
         ng = dim(g)[2]
 
         modeldata = cbind(epsdata0[,1],covariates0)
@@ -245,9 +244,9 @@ epsCC.test = function(nullmodel,SNP,cutoffs,randomindex){
         nr = length(y_r)
         ne = length(y_e)
 
-        totest = colnames(SNP)
-        g_r = as.matrix(as.matrix(SNP)[randomindex ==1,])
-        g_e = as.matrix(as.matrix(SNP)[randomindex ==0,])
+        totest = colnames(xg)
+        g_r = as.matrix(as.matrix(xg)[randomindex ==1,])
+        g_e = as.matrix(as.matrix(xg)[randomindex ==0,])
         ng = dim(g_e)[2]
 
         modeldata = epsdata0

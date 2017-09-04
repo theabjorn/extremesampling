@@ -1,4 +1,4 @@
-epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomindex){
+epsCC.rv.test.naive = function(epsdata0,covariates0,xg,isx,l,u,rsample, randomindex){
 
     if(!rsample){
         ###################################################################
@@ -11,7 +11,7 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
 
         if(sum((y>l & y<u))>0){stop("Incorrect data format")}
 
-        g = as.matrix(RV)
+        g = as.matrix(xg)
         ng = dim(g)[2]
 
         modeldata = cbind(epsdata0[,1],covariates0)
@@ -129,7 +129,7 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
         nr = length(y_r)
         ne = length(y_e)
 
-        g = as.matrix(RV)
+        g = as.matrix(xg)
         gr = g[randomindex ==1,]
         ge =  g[randomindex ==0,]
         ng = dim(g)[2]
@@ -248,7 +248,7 @@ epsCC.rv.test.naive = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomin
 
 
 
-epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample, randomindex,weights){
+epsCC.rv.test.varcomp = function(epsdata0,covariates0,xg,isx,l,u,rsample, randomindex,weights){
     Bmat = diag(weights)
 
     if(!rsample){
@@ -262,7 +262,7 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample, randominde
 
         if(sum((y>l & y<u))>0){stop("Incorrect data format")}
 
-        g = as.matrix(RV)
+        g = as.matrix(xg)
         ng = dim(g)[2]
 
         modeldata = cbind(epsdata0[,1],covariates0)
@@ -403,7 +403,7 @@ epsCC.rv.test.lmm = function(epsdata0,covariates0,RV,isx,l,u,rsample, randominde
         nr = length(y_r)
         ne = length(y_e)
 
-        g = as.matrix(RV)
+        g = as.matrix(xg)
         gr = g[randomindex ==1,]
         ge =  g[randomindex ==0,]
         ng = dim(g)[2]
