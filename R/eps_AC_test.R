@@ -136,7 +136,14 @@ epsAC.test = function(nullmodel, xg, confounder){
 
             Sigma = var1 - var2
 
-            s = (t(gm)%*%(Ie-He)%*%y)/sigma2
+            # Old:
+            # gm = rep(eg,n)
+            # sig1 = (t(gm)%*%(Ie-He)%*%gm)/sigma2
+            # sig2 = varg*(sum(z[extreme]^2) - (1/n_cc)*(sum(z[extreme]))^2)/(sigma2^2)
+            # Sigma = sig1+sig2
+
+            #s = (t(gm)%*%(Ie-He)%*%y)/sigma2
+            s = t(gm)%*%z/sigma2
 
             t = (s*s)/Sigma
             pval = pchisq(t,1,lower.tail=FALSE)
@@ -166,31 +173,31 @@ epsAC.test = function(nullmodel, xg, confounder){
             g = as.matrix(xg[extreme,i])
             n_cc = sum(extreme)
 
+            eg = c()
+            varg = c()
+            egvec = rep(0,n)
+
+            var2 = 0
+
             # confounding
             ux = as.matrix(unique(xe[extreme,cind]))
             nu = dim(ux)[1]
             if(nu != dim(as.matrix(unique(xe[,cind])))[1]){
                 warning("All unique levels of confounder not found in extreme sample")
             }
-            uindex_all = list()
-            uindex_cc = list()
-            uindex_ic = list()
-            for(u in 1:nu){
-                uindex_all[[u]] = (xe[,cind] == ux[u,])
-                uindex_cc[[u]] = (xe[extreme,cind] == ux[u,])
-                uindex_ic[[u]] = (xe[!extreme,cind] == ux[u,])
-            }
-
-            eg = c()
-            varg = c()
-            egvec = rep(0,n)
 
             for(u in 1:nu){
-                uind = uindex_cc[[u]]
-                allind = uindex_all[[u]]
-                egvec[allind] = mean(g[uind])
-                eg[u] = mean(g[uind])
-                varg[u] = var(g[uind])
+                uindex_all = (xe[,cind] == ux[u,])
+                uindex_cc = (xe[extreme,cind] == ux[u,])
+                uindex_ic = (xe[!extreme,cind] == ux[u,])
+
+                egvec[uindex_all] = mean(g[uindex_cc])
+
+                varg = var(g[uindex_cc])
+                n_ucc = length(z[extreme][uindex_cc])
+                n_uic = length(z[!extreme][uindex_ic])
+
+                var2 = var2 + varg*(sum(z[!extreme][uind_ic]^2) - sigma2*(n_uic) - (1/n_ucc)*(sum(z[!extreme][uind_ic]))^2)/(sigma2^2)
             }
 
             gm = rep(0,n)
@@ -198,18 +205,6 @@ epsAC.test = function(nullmodel, xg, confounder){
             gm[!extreme] = egvec[!extreme]
 
             var1 = (t(gm)%*%(Ie-He)%*%gm)/sigma2
-
-            var2 = 0
-            for(u in 1:nu){
-                uind_ic = uindex_ic[[u]]
-                uind_cc = uindex_cc[[u]]
-                uind_all = uindex_all[[u]]
-
-                n_uic = length(z[!extreme][uind_ic])
-                n_ucc = length(z[extreme][uind_cc])
-
-                var2 = var2 + varg[u]*(sum(z[!extreme][uind_ic]^2) - sigma2*(n_uic) - (1/n_ucc)*(sum(z[!extreme][uind_ic]))^2)/(sigma2^2)
-            }
 
             Sigma = var1 - var2
             s = (t(gm)%*%(Ie-He)%*%y)/sigma2
@@ -229,12 +224,9 @@ epsAC.test = function(nullmodel, xg, confounder){
         ##############################################################
         fit = lm(y~1) # Fit under H0
         z = fit$residuals
-        alpha = mean(y)
         sigma2 = sum(z^2)/n
         sigma = sqrt(sigma2)
-
-        Xe = rep(1,n)
-        He = Xe%*%ginv(t(Xe)%*%Xe)%*%t(Xe)
+        He = matrix(1,nrow = n, ncol = n)*(1/n)
         Ie = diag(1,nrow = n, ncol = n)
 
         for(i in 1:ng){
