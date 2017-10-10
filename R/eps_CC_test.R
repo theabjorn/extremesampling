@@ -116,16 +116,19 @@ epsCC.test = function(nullmodel,xg,cutoffs,randomindex){
             ###############################################################
             x = as.matrix(covariates0)
 
+            Xe = cbind(rep(1,n),x)
+
             fit = epsCC.loglikmax(modeldata,c(l,u)) # Fit under H0
-            alpha = fit[1]
-            beta = fit[2:(length(fit)-1)]
+            #alpha = fit[1]
+            #beta = fit[2:(length(fit)-1)]
+            beta = fit[1:(length(fit)-1)]
             sigma = fit[length(fit)]
             sigma2 = sigma*sigma
 
-            xbeta = x%*%beta
-            f = y-alpha-xbeta
-            zl = (l-alpha-xbeta)/sigma
-            zu = (u-alpha-xbeta)/sigma
+            xbeta = Xe%*%beta
+            f = y-xbeta
+            zl = (l-xbeta)/sigma
+            zu = (u-xbeta)/sigma
 
             h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
             h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
@@ -136,11 +139,13 @@ epsCC.test = function(nullmodel,xg,cutoffs,randomindex){
             c = c(2*h1 - h3 - h1*h1)
             b = c(h0 - h2 - h0*h1)
 
-            I11_11 = sum(a)
-            I11_22 = t(x)%*%(diag(a)%*%x)
+            # I11_11 = sum(a)
+            # I11_22 = t(x)%*%(diag(a)%*%x)
+            #
+            # I11_21 = t(x)%*%a
+            # I11_12 = t(I11_21)
 
-            I11_21 = t(x)%*%a
-            I11_12 = t(I11_21)
+            I11_11 = t(Xe)%*%(diag(a)%*%Xe)
 
             I11_33 = sum(c - 3*c(h1)) + 2*n
 
@@ -150,34 +155,30 @@ epsCC.test = function(nullmodel,xg,cutoffs,randomindex){
             I11_23 = t(x)%*%(b-2*c(h0))
             I11_32 = t(I11_23)
 
-            I11 = cbind(rbind(I11_11,I11_21,I11_31),
-                        rbind(I11_12,I11_22,I11_32),
-                        rbind(I11_13,I11_23,I11_33))
+            I11 = rbind(cbind(I11_11, rbind(I11_13,I11_23)),
+                        cbind(I11_31, I11_32, I11_33))
 
-            for(i in 1:ng){
-                gi = g[,i]
+            I22 = t(a)%*%(g*g)
 
-                I22 = t(gi)%*%(diag(a)%*%gi)
+            I12 = rbind(crossprod(diag(a)%*%Xe,g),2*t(f)%*%g/sigma + t(b)%*%g)
+            I11invI12 = solve(I11)%*%I12
+            Sigma = (1/sigma2)*(I22 - colSums(I12*I11invI12))
 
-                I21_1 = t(gi)%*%a
-                I21_2 = t(gi)%*%diag(a)%*%x
+            s = c(crossprod(g,(y-xbeta+sigma*h0))/sigma2)
 
-                I21_3 = 2*sum(f*gi)/sigma + sum(b*gi)
+            t = s*s/Sigma
+            pval = pchisq(t,1,lower.tail=FALSE)
 
-                I21 = cbind(I21_1,I21_2,I21_3)
-                I12 = t(I21)
-
-                Sigma = (1/sigma2)*(I22 - I21%*%ginv(I11)%*%t(I21))
-                s = t(gi)%*%(y-alpha-xbeta +sigma*h0)/sigma2
-                t = s*s/Sigma
-                pval = pchisq(t,1,lower.tail=FALSE)
-
-                statistic[i,] = c(t)
-                pvalue[i,] = c(pval)
-            }
+            statistic = matrix(t,ncol = 1, nrow = ng)
+            pvalue = matrix(pval,ncol = 1, nrow = ng)
+            rownames(statistic) = totest
+            rownames(pvalue) = totest
+            colnames(statistic) = "t"
+            colnames(pvalue) = "p.value"
             result = list(statistic,pvalue)
             names(result) = c("statistic","p.value")
             return(result)
+
         }else{
             ##############################################################
             # No covariates present in the null model

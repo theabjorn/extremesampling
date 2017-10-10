@@ -6,7 +6,7 @@
 #' describes the linear regression model under the null hypothesis, see details
 #' @param xg a matrix of variables to be tested against the null (NA for
 #' not genotyped individuals)
-#' @param confounder (optional) vector of names of confounding (non-genetic) covariates
+#' @param confounder confounding (non-genetic) covariates
 #' @return \code{epsAC.test} returns
 #' \item{statistic}{the score test statistic}
 #' \item{p.value}{the P-value}
@@ -65,7 +65,17 @@ epsAC.test = function(nullmodel, xg, confounder){
     n = length(y)
 
     conf = FALSE
-    if(!missing(confounder)){conf = TRUE}
+    if(!missing(confounder)){
+        conf = TRUE
+        xec = as.matrix(confounder)
+        message(paste("Confounding assumed"))
+        for(j in 1:dim(xec)[2]){
+        if(length(unique(xec[,j])) > 10){
+            stop("Only discrete confounders with less than or equal to 10 unique levels are accepted as confounders.
+                 Please recode you confounder to satisfy this.")
+            }
+        }
+    }
 
     isxe = FALSE
     if(dim(covariates0)[2]>0){
@@ -73,21 +83,6 @@ epsAC.test = function(nullmodel, xg, confounder){
         xe = covariates0
         if(dim(covariates0)[2] ==1){
             colnames(covariates0) = colnames(epsdata0)[2]
-        }
-        # Confounders
-        if(conf){
-            if(is.na(match(confounder,colnames(covariates0)))){
-                stop("The name of the confounder given is not the name of a covariate.")
-            }
-            message(paste("Confounders: ", toString(confounder),sep=""))
-            cind = match(confounder,colnames(covariates0))
-            xecind = as.matrix(covariates0[,cind])
-            for(j in 1:length(confounder)){
-                if(length(unique(xecind[,j])) > 10){
-                    stop("Only discrete confounders with less than or equal to 10 unique levels are accepted as confounders.
-                         Please recode you confounder to satisfy this.")
-                }
-            }
         }
     }
 
@@ -115,45 +110,39 @@ epsAC.test = function(nullmodel, xg, confounder){
         z = fit$residuals
         sigma2 = sum(z^2)/n
         sigma = sqrt(sigma2)
-
         Xe = cbind(rep(1,n),xe)
-        He = Xe%*%ginv(t(Xe)%*%Xe)%*%t(Xe)
-        Ie = diag(1,nrow = n, ncol = n)
 
-        for(i in 1:ng){
-            extreme = !is.na(xg[,i])
-            g = as.matrix(xg[extreme,i])
-            n_cc = sum(extreme)
-
-            eg = mean(g)
-            varg = var(g)
-
-            gm = rep(eg,n)
-            gm[extreme] = g
-
-            var1 = (t(gm)%*%(Ie-He)%*%gm)/sigma2
-            var2 = varg*(sum(z[!extreme]^2) - sigma2*(n-n_cc) - (1/n_cc)*(sum(z[!extreme]))^2)/(sigma2^2)
-
-            Sigma = var1 - var2
-
-            # Old:
-            # gm = rep(eg,n)
-            # sig1 = (t(gm)%*%(Ie-He)%*%gm)/sigma2
-            # sig2 = varg*(sum(z[extreme]^2) - (1/n_cc)*(sum(z[extreme]))^2)/(sigma2^2)
-            # Sigma = sig1+sig2
-
-            #s = (t(gm)%*%(Ie-He)%*%y)/sigma2
-            s = t(gm)%*%z/sigma2
-
-            t = (s*s)/Sigma
-            pval = pchisq(t,1,lower.tail=FALSE)
-
-            statistic[i,] = t
-            pvalue[i,] = pval
+        meanimpute = function(g){
+            g[is.na(g)] = mean(g,na.rm=TRUE)
+            return(g)
         }
+        xgm = apply(xg,2,meanimpute)
+        veg = crossprod(Xe,xgm)
+        veeinvveg = solve(crossprod(Xe,Xe))%*%veg
+        var1 = (colSums(xgm*xgm)-colSums(veg*veeinvveg))/sigma2
+        calcvar2 = function(g){
+            varg = var(g,na.rm=TRUE)
+            n_ic = sum(is.na(g))
+            n_cc = sum(!is.na(g))
+            return(varg*(sum(z[is.na(g)]^2) - sigma2*n_ic + (1/n_cc)*(sum(z[is.na(g)]))^2)/(sigma2^2))
+        }
+        var2 = apply(xg,2,calcvar2)
+
+        s = c(t(z)%*%xgm/sigma2)
+        Sigma = var1 - var2
+        t = (s*s)/Sigma
+        pval = pchisq(t,1,lower.tail=FALSE)
+
+        statistic = matrix(t,ncol = 1, nrow = ng)
+        pvalue = matrix(pval,ncol = 1, nrow = ng)
+        rownames(statistic) = totest
+        rownames(pvalue) = totest
+        colnames(statistic) = "t"
+        colnames(pvalue) = "p.value"
         result = list(statistic,pvalue)
         names(result) = c("statistic","p.value")
         return(result)
+
     }else if(isxe & conf){
         ###############################################################
         # Environmental covariates (xe) present in the null model
@@ -165,56 +154,107 @@ epsAC.test = function(nullmodel, xg, confounder){
         sigma = sqrt(sigma2)
 
         Xe = cbind(rep(1,n),xe)
-        He = Xe%*%ginv(t(Xe)%*%Xe)%*%t(Xe)
-        Ie = diag(1,nrow = n, ncol = n)
 
-        for(i in 1:ng){
-            extreme = !is.na(xg[,i])
-            g = as.matrix(xg[extreme,i])
-            n_cc = sum(extreme)
+        ux = as.matrix(unique(xec))
+        nu = dim(ux)[1]
 
-            eg = c()
-            varg = c()
-            egvec = rep(0,n)
-
-            var2 = 0
-
-            # confounding
-            ux = as.matrix(unique(xe[extreme,cind]))
-            nu = dim(ux)[1]
-            if(nu != dim(as.matrix(unique(xe[,cind])))[1]){
-                warning("All unique levels of confounder not found in extreme sample")
-            }
-
+        meanimpute = function(g){
             for(u in 1:nu){
-                uindex_all = (xe[,cind] == ux[u,])
-                uindex_cc = (xe[extreme,cind] == ux[u,])
-                uindex_ic = (xe[!extreme,cind] == ux[u,])
-
-                egvec[uindex_all] = mean(g[uindex_cc])
-
-                varg = var(g[uindex_cc])
-                n_ucc = length(z[extreme][uindex_cc])
-                n_uic = length(z[!extreme][uindex_ic])
-
-                var2 = var2 + varg*(sum(z[!extreme][uind_ic]^2) - sigma2*(n_uic) - (1/n_ucc)*(sum(z[!extreme][uind_ic]))^2)/(sigma2^2)
+                uindex_all = (xec == ux[u,])
+                gu = g[uindex_all]
+                gu[is.na(gu)] = mean(gu,na.rm=TRUE)
+                g[uindex_all] = gu
             }
-
-            gm = rep(0,n)
-            gm[extreme] = g
-            gm[!extreme] = egvec[!extreme]
-
-            var1 = (t(gm)%*%(Ie-He)%*%gm)/sigma2
-
-            Sigma = var1 - var2
-            s = (t(gm)%*%(Ie-He)%*%y)/sigma2
-
-            t = (s*s)/Sigma
-            pval = pchisq(t,1,lower.tail=FALSE)
-
-            statistic[i,] = t
-            pvalue[i,] = pval
+            return(g)
         }
+
+        xgm = apply(xg,2,meanimpute)
+        veg = crossprod(Xe,xgm)
+        veeinvveg = solve(crossprod(Xe,Xe))%*%veg
+        var1 = (colSums(xgm*xgm)-colSums(veg*veeinvveg))/sigma2
+
+        calcvar2 = function(g){
+            tmp = 0
+            for(u in 1:nu){
+                uindex_all = (xec == ux[u,])
+                gu = g[uindex_all]
+                varg = var(gu,na.rm=TRUE)
+                zu = z[uindex_all]
+                n_uic = sum(is.na(gu))
+                n_ucc = sum(!is.na(gu))
+                tmp = tmp + varg*(sum(zu[is.na(gu)]^2) - sigma2*n_uic + (1/n_ucc)*(sum(zu[is.na(gu)]))^2)/(sigma2^2)
+            }
+            return(tmp)
+        }
+        var2 = apply(xg,2,calcvar2)
+
+        s = c(t(z)%*%xgm/sigma2)
+        Sigma = var1 - var2
+        t = (s*s)/Sigma
+        pval = pchisq(t,1,lower.tail=FALSE)
+
+        statistic = matrix(t,ncol = 1, nrow = ng)
+        pvalue = matrix(pval,ncol = 1, nrow = ng)
+        rownames(statistic) = totest
+        rownames(pvalue) = totest
+        colnames(statistic) = "t"
+        colnames(pvalue) = "p.value"
+        result = list(statistic,pvalue)
+        names(result) = c("statistic","p.value")
+        return(result)
+    }else if(conf){
+        fit = lm(y~1) # Fit under H0
+        z = fit$residuals
+        sigma2 = sum(z^2)/n
+        sigma = sqrt(sigma2)
+
+        Xe = matrix(1,ncol=1,nrow = n)
+
+        ux = as.matrix(unique(xec))
+        nu = dim(ux)[1]
+
+        meanimpute = function(g){
+            for(u in 1:nu){
+                uindex_all = (xec == ux[u,])
+                gu = g[uindex_all]
+                gu[is.na(gu)] = mean(gu,na.rm=TRUE)
+                g[uindex_all] = gu
+            }
+            return(g)
+        }
+
+        xgm = apply(xg,2,meanimpute)
+        veg = crossprod(Xe,xgm)
+        veeinvveg = solve(crossprod(Xe,Xe))%*%veg
+        var1 = (colSums(xgm*xgm)-colSums(veg*veeinvveg))/sigma2
+
+        calcvar2 = function(g){
+            tmp = 0
+            for(u in 1:nu){
+                uindex_all = (xec == ux[u,])
+                gu = g[uindex_all]
+                varg = var(gu,na.rm=TRUE)
+                zu = z[uindex_all]
+                n_uic = sum(is.na(gu))
+                n_ucc = sum(!is.na(gu))
+                tmp = tmp + varg*(sum(zu[is.na(gu)]^2) - sigma2*n_uic + (1/n_ucc)*(sum(zu[is.na(gu)]))^2)/(sigma2^2)
+            }
+            return(tmp)
+        }
+        var2 = apply(xg,2,calcvar2)
+
+        #s = c(t(z[!is.na(xg[,1])])%*%xg[!is.na(xg[,1]),]/sigma2)
+        s = c(t(z)%*%xgm/sigma2)
+        Sigma = var1 - var2
+        t = (s*s)/Sigma
+        pval = pchisq(t,1,lower.tail=FALSE)
+
+        statistic = matrix(t,ncol = 1, nrow = ng)
+        pvalue = matrix(pval,ncol = 1, nrow = ng)
+        rownames(statistic) = totest
+        rownames(pvalue) = totest
+        colnames(statistic) = "t"
+        colnames(pvalue) = "p.value"
         result = list(statistic,pvalue)
         names(result) = c("statistic","p.value")
         return(result)
@@ -226,36 +266,41 @@ epsAC.test = function(nullmodel, xg, confounder){
         z = fit$residuals
         sigma2 = sum(z^2)/n
         sigma = sqrt(sigma2)
-        He = matrix(1,nrow = n, ncol = n)*(1/n)
-        Ie = diag(1,nrow = n, ncol = n)
 
-        for(i in 1:ng){
-            extreme = !is.na(xg[,i])
-            g = as.matrix(xg[extreme,i])
-            n_cc = sum(extreme)
+        Xe = matrix(1,ncol=1,nrow = n)
 
-            eg = mean(g)
-            varg = var(g)
-
-            gm = rep(eg,n)
-            gm[extreme] = g
-
-            var1 = (t(gm)%*%(Ie-He)%*%gm)/sigma2
-            var2 = varg*(sum(z[!extreme]^2) - sigma2*(n-n_cc) - (1/n_cc)*(sum(z[!extreme]))^2)/(sigma2^2)
-
-            Sigma = var1 - var2
-
-            s = (t(gm)%*%(Ie-He)%*%y)/sigma2
-
-            t = (s*s)/Sigma
-            pval = pchisq(t,1,lower.tail=FALSE)
-
-            statistic[i,] = t
-            pvalue[i,] = pval
+        meanimpute = function(g){
+            g[is.na(g)] = mean(g,na.rm=TRUE)
+            return(g)
         }
+        xgm = apply(xg,2,meanimpute)
+        veg = crossprod(Xe,xgm)
+        veeinvveg = solve(crossprod(Xe,Xe))%*%veg
+        var1 = (colSums(xgm*xgm)-colSums(veg*veeinvveg))/sigma2
+        calcvar2 = function(g){
+            varg = var(g,na.rm=TRUE)
+            n_ic = sum(is.na(g))
+            n_cc = sum(!is.na(g))
+            return(varg*(sum(z[is.na(g)]^2) - sigma2*n_ic + (1/n_cc)*(sum(z[is.na(g)]))^2)/(sigma2^2))
+        }
+        var2 = apply(xg,2,calcvar2)
+
+        s = c(t(z)%*%xgm/sigma2)
+        #s = c(t(z[!is.na(xg[,1])])%*%xg[!is.na(xg[,1]),]/sigma2)
+        Sigma = var1 - var2
+        t = (s*s)/Sigma
+        pval = pchisq(t,1,lower.tail=FALSE)
+
+        statistic = matrix(t,ncol = 1, nrow = ng)
+        pvalue = matrix(pval,ncol = 1, nrow = ng)
+        rownames(statistic) = totest
+        rownames(pvalue) = totest
+        colnames(statistic) = "t"
+        colnames(pvalue) = "p.value"
         result = list(statistic,pvalue)
         names(result) = c("statistic","p.value")
         return(result)
+
     }
 
 }
