@@ -31,7 +31,7 @@
 #' @import MASS stats
 #' @export
 #' @examples
-#' epsCC.test(phenoCV_CC ~ xeCV_CC,xg = gCV_CC,cutoffs = c(lCV,uCV))
+#' epsCC.test(phenoCV_CC ~ xeCV_CC,xg = gCV_CC,lCV,uCV)
 
 epsCC.test = function(nullmodel,xg,l,u,randomindex){
     if(class(nullmodel)!="formula"){
@@ -88,6 +88,8 @@ epsCC.test = function(nullmodel,xg,l,u,randomindex){
         # Extremes + random sample
         ###################################################################
         message("EPS complete-case test with random samples")
+
+        stop("Not available at this time")
 
         if(isx){
             ###############################################################

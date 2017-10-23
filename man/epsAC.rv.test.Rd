@@ -4,7 +4,7 @@
 \alias{epsAC.rv.test}
 \title{Score test EPS-AC rare variants}
 \usage{
-epsAC.rv.test(nullmodel, xg, confounder, method = "naive", weights)
+epsAC.rv.test(nullmodel, xg, confounder, method = "simple", weights)
 }
 \arguments{
 \item{nullmodel}{an object of class \code{\link[stats]{formula}}, that
@@ -15,11 +15,10 @@ not genotyped individuals)}
 
 \item{confounder}{(optional) vector of names of confounding (non-genetic) covariates}
 
-\item{method}{testing the burden using \code{naive}, \code{collapsing} or
+\item{method}{testing the burden using \code{simple}, \code{collapse} or
 \code{varcomp} method, see details}
 
-\item{weights}{optional weights for the \code{collapsing} or
-\code{varcomp} method}
+\item{weights}{optional weights}
 }
 \value{
 \code{epsAC.rv.test} returns for the whole burden of variants:
@@ -45,38 +44,35 @@ Missing-mechanism assumed equal for all genetic variants.
 Confounders are discrete covariates (xe) and the distribution of xg is
 modelled for each level of unique value of xe.
 
-The \code{naive} method uses a standard score test to test the burden,
-the \code{collaps} method tests the (weighted) sum of all variants in the
+The \code{simple} method uses a standard score test to test the burden,
+the \code{collapse} method tests the (weighted) sum of all variants in the
 burden, while the \code{varcomp} method is a (weighted) variance
 component score test.
+
+The \code{varcomp} method is a special case of the popular SKAT method
+for a linear weighted kernel under extreme phenotype sampling. The p-value is found
+using the function \code{\link[CompQuadForm]{davies}} in the CompQuadForm
+package.
 }
 \examples{
-N = 5000 # Number of individuals in a population
-xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
-xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-maf1 = 0.01; maf2 = 0.02; maf3 = 0.005
-xg1 = sample(c(0,1,2),N,c((1-maf1)^2,2*maf1*(1-maf1),maf1^2), replace = TRUE) # xg
-xg2 = sample(c(0,1,2),N,c((1-maf2)^2,2*maf2*(1-maf2),maf2^2), replace = TRUE) # xg
-xg3 = sample(c(0,1,2),N,c((1-maf3)^2,2*maf3*(1-maf3),maf3^2), replace = TRUE) # xg
-# Model parameters
-a = 50; be1 = 5; be2 = 8; bg1 = -0.3; bg2 = 0.6; sigma = 2
-# Generate response y
-y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
-# Identify extremes, here upper and lower 25\% of population
-u = quantile(y,probs = 3/4,na.rm=TRUE)
-l = quantile(y,probs = 1/4,na.rm=TRUE)
-extreme = (y < l) | (y >= u)
-# Create the EPS all-case data set
-xg1[!extreme] = NA; xg2[!extreme] = NA; xg3[!extreme] = NA;
-xg = as.matrix(cbind(xg1,xg2,xg3))
-xe = as.matrix(cbind(xe1,xe2))
-
-# Testing
-# Naive test
-epsAC.rv.test(y~xe,xg=xg)
+# Simple test
+epsAC.rv.test(phenoRV~EPSxe,xg=gRV)
 # Collapsing test
-epsAC.rv.test(y~xe,xg=xg,method = "collaps",weights)
-# Variance component test (assume linear mixed model)
-epsAC.rv.test(y~xe,xg=xg,method = "varcomp",weights)
+epsAC.rv.test(phenoRV~EPSxe,xg=gRV,method = "collapse")
+# Variance component test
+epsAC.rv.test(phenoRV~EPSxe,xg=gRV,method = "varcomp")
 
+Control for include confounders
+epsAC.rv.test(phenoRV~EPSxe1 + EPSxe2,xg=gRV,confounder = EPSxe1)
+}
+\references{
+\insertRef{quadRpackage}{extremesampling},
+
+\insertRef{wu2011SKAT}{extremesampling}
+}
+\seealso{
+\code{\link[SKAT]{SKAT}} for the SKAT test for random samples,
+\code{\link[CompQuadForm]{davies}} for the Davies method,
+\code{\link{epsAC.test}} for a common variant SNP by SNP test for
+all-case extreme sampling
 }

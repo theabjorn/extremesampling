@@ -30,6 +30,9 @@ with 95 percent confidence intervals
 \item{maf}{the estimated minor allele frequencies, returned if
 \code{HWE = TRUE} but \code{MAF} is unspecified}
 }
+\description{
+Fit linear model to EPS-full data
+}
 \details{
 The \code{\link[stats]{formula}} object is of the type
 y~xe+xg, which describes a regression model, y=a+be*xe+bg*xg+e

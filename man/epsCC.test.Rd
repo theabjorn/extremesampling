@@ -4,7 +4,7 @@
 \alias{epsCC.test}
 \title{Score test EPS-CC}
 \usage{
-epsCC.test(nullmodel, xg, cutoffs, randomindex)
+epsCC.test(nullmodel, xg, l, u, randomindex)
 }
 \arguments{
 \item{nullmodel}{an object of class \code{\link[stats]{formula}}, that
@@ -12,8 +12,9 @@ describes the linear regression model under the null hypothesis}
 
 \item{xg}{a matrix of genetic variants to be tested against the null}
 
-\item{cutoffs}{a vector \code{(l,u)} of the lower and upper cut-off used
-for extreme sampling}
+\item{l}{cutoff for lower extreme, can be sample-specific or general}
+
+\item{u}{cutoff for upper extreme, can be sample-specific or general}
 
 \item{randomindex}{a binary vector that indicates if samples are random
 or extreme}
@@ -44,24 +45,5 @@ individuals. The cut-offs \code{l} and \code{u} that specify the
 sampling must be given in the \code{cutoffs} argument.
 }
 \examples{
-N = 5000 # Number of individuals in a population
-xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
-xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # xg
-xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # xg
-# Model parameters
-a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
-# Generate response y
-y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
-# Identify extremes, here upper and lower 25\% of population
-u = quantile(y,probs = 3/4,na.rm=TRUE)
-l = quantile(y,probs = 1/4,na.rm=TRUE)
-extreme = (y < l) | (y >= u)
-# Create the EPS complete-case data set
-y = y[extreme]; xe1 = xe1[extreme]; xe2 = xe2[extreme]
-xg1 = xg1[extreme]; xg2 = xg2[extreme]
-xg = as.matrix(cbind(xg1,xg2)); xe = as.matrix(cbind(xe1,xe2))
-
-# Testing
-epsCC.test(y~xe,xg=xg,cutoffs = c(l,u))
+epsCC.test(phenoCV_CC ~ xeCV_CC,xg = gCV_CC,lCV,uCV)
 }

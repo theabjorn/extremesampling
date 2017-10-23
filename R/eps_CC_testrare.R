@@ -11,8 +11,7 @@
 #' or extreme
 #' @param method testing the burden using \code{simple}, \code{collapsing} or
 #' \code{varcomp} method, see details
-#' @param weights optional weights for the \code{collapsing} or
-#' \code{varcomp} method
+#' @param weights optional weights
 #'
 #' @return \code{epsCC.rv.test} returns for the whole burden of variants:
 #' \item{statistic}{the score test statistic}

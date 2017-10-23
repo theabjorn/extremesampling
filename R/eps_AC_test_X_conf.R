@@ -30,11 +30,16 @@ eps_AC_test_x_conf = function(y,xe,xec,xg){
         }
         return(g)
     }
+    gm = apply(xg,2,meanimpute)
 
-    xgm = apply(xg,2,meanimpute)
-    veg = crossprod(Xe,xgm)
-    veeinvveg = solve(crossprod(Xe,Xe))%*%veg
-    var1 = (colSums(xgm*xgm)-colSums(veg*veeinvveg))/sigma2
+    ## v1 = (g_m^T(I-H)g_m) / sigma2  - For each individual
+    # (Xe^T Xe)^-1
+    xetxeinv = solve(crossprod(Xe,Xe))
+    # G_m^T H G_m
+    tmpMat = xetxeinv%*%crossprod(Xe,gm)
+    v1 = (colSums(gm*gm) - colSums( crossprod(Xe,gm)*tmpMat ))/sigma2
+
+    ## v2 =  sum_j n_j var(g|j) ( sigma2 - var(z_j)) / sigma4
 
     calcvar2 = function(g){
         tmp = 0
@@ -43,16 +48,17 @@ eps_AC_test_x_conf = function(y,xe,xec,xg){
             gu = g[uindex_all]
             varg = var(gu,na.rm=TRUE)
             zu = z[uindex_all]
-            n_uic = sum(is.na(gu))
             n_ucc = sum(!is.na(gu))
-            tmp = tmp + varg*(sum(zu[is.na(gu)]^2) - sigma2*n_uic + (1/n_ucc)*(sum(zu[is.na(gu)]))^2)/(sigma2^2)
-        }
-        return(tmp)
-    }
-    var2 = apply(xg,2,calcvar2)
 
-    s = c(t(z)%*%xgm/sigma2)
-    Sigma = var1 - var2
+            tmp = tmp + n_ucc*varg*(sigma2 - var(zu[!is.na(gu)]))
+        }
+        return(tmp/(sigma2^2))
+    }
+    v2 = apply(xg,2,calcvar2)
+
+    s = crossprod(gm,z)/sigma2
+    Sigma = v1 - v2
+
     t = (s*s)/Sigma
     pval = pchisq(t,1,lower.tail=FALSE)
 
