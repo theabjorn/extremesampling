@@ -5,11 +5,11 @@
 #' @param nullmodel an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model under the null hypothesis
 #' @param xg a matrix of genetic variants to be tested against the null
-#' @param cutoffs a vector \code{c(l,u)} of the lower and upper cut-offs used
-#' for extreme sampling
+#' @param l cutoff for lower extreme, can be sample-specific or general
+#' @param u cutoff for upper extreme, can be sample-specific or general
 #' @param randomindex a binary vector that indicates if samples are random
 #' or extreme
-#' @param method testing the burden using \code{naive}, \code{collapsing} or
+#' @param method testing the burden using \code{simple}, \code{collapsing} or
 #' \code{varcomp} method, see details
 #' @param weights optional weights for the \code{collapsing} or
 #' \code{varcomp} method
@@ -33,48 +33,41 @@
 #' individuals. The cut-offs \code{l} and \code{u} that specify the
 #' sampling must be given in the \code{cutoffs} argument.
 #'
-#' The \code{naive} method uses a standard score test to test the burden,
-#' the \code{collaps} method tests the (weighted) sum of all variants in the
+#' The \code{simple} method uses a standard score test to test the burden,
+#' the \code{collapse} method tests the (weighted) sum of all variants in the
 #' burden, while the \code{varcomp} method is a (weighted) variance
 #' component score test.
 #'
-#' @import MASS stats
+#' The \code{varcomp} method is a special case of the popular SKAT method
+#' for a linear weighted kernel under extreme phenotype sampling. The p-value is found
+#' using the function \code{\link[CompQuadForm]{davies}} in the CompQuadForm
+#' package.
+#'
+#' @references
+#' \insertRef{quadRpackage}{extremesampling},
+#'
+#' \insertRef{wu2011SKAT}{extremesampling}
+#'
+#' @seealso \code{\link[SKAT]{SKAT}} for the SKAT test for random samples,
+#' \code{\link[CompQuadForm]{davies}} for the Davies method,
+#' \code{\link{epsCC.test}} for a common variant SNP by SNP test for
+#' complete-case extreme sampling
+#'
+#' @import MASS stats CompQuadForm
 #' @export
 #' @examples
-#' N = 5000 # Number of individuals in a population
-#' xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
-#' xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-#' maf1 = 0.01; maf2 = 0.02; maf3 = 0.005
-#' xg1 = sample(c(0,1,2),N,c((1-maf1)^2,2*maf1*(1-maf1),maf1^2), replace = TRUE) # xg
-#' xg2 = sample(c(0,1,2),N,c((1-maf2)^2,2*maf2*(1-maf2),maf2^2), replace = TRUE) # xg
-#' xg3 = sample(c(0,1,2),N,c((1-maf3)^2,2*maf3*(1-maf3),maf3^2), replace = TRUE) # xg
-#' # Model parameters
-#' a = 50; be1 = 5; be2 = 8; bg1 = -0.3; bg2 = 0.6; sigma = 2
-#' # Generate response y
-#' y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
-#' # Identify extremes, here upper and lower 25% of population
-#' u = quantile(y,probs = 3/4,na.rm=TRUE)
-#' l = quantile(y,probs = 1/4,na.rm=TRUE)
-#' extreme = (y < l) | (y >= u)
-#' # Create the EPS complete-case data set
-#' y = y[extreme]; xe1 = xe1[extreme]; xe2 = xe2[extreme]
-#' xg1 = xg1[extreme]; xg2 = xg2[extreme]; xg3 = xg3[extreme]
-#' xg = as.matrix(cbind(xg1,xg2,xg3)); xe = as.matrix(cbind(xe1,xe2))
 #'
-#' # Testing
-#' # Naive test
-#' epsCC.rv.test(y~xe,xg=xg,cutoffs = c(l,u))
+#' # Simple test
+#' epsCC.rv.test(phenoRV_CC~xeRV_CC,xg=gRV_CC,l=lRV,u=uRV)
 #' # Collapsing test
-#' epsCC.rv.test(y~xe,xg=xg,cutoffs = c(l,u),method = "collaps",weights)
-#' # Variance component test (assume linear mixed model)
-#' epsCC.rv.test(y~xe,xg=xg,cutoffs = c(l,u),method = "varcomp",weights)
+#' epsCC.rv.test(phenoRV_CC~xeRV_CC,xg=gRV_CC,l=lRV,u=uRV,method = "collapse")
+#' # Variance component test
+#' epsCC.rv.test(phenoRV_CC~xeRV_CC,xg=gRV_CC,l=lRV,u=uRV,method = "varcomp")
 #'
 
-epsCC.rv.test = function(nullmodel,xg,cutoffs,randomindex,method = "naive",weights){
+epsCC.rv.test = function(nullmodel,xg,l,u,randomindex,method = "simple",weights){
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
-
-    if(length(cutoffs) != 2){stop("Invalid cutoffs vector given")}
 
     rsample = TRUE
     if(missing(randomindex)){
@@ -85,16 +78,15 @@ epsCC.rv.test = function(nullmodel,xg,cutoffs,randomindex,method = "naive",weigh
 
     options(na.action="na.pass")
         epsdata0 = model.frame(nullmodel)
-        covariates0 = as.matrix(model.matrix(nullmodel)[,-1])
+        xe = as.matrix(model.matrix(nullmodel)[,-1])
     options(na.action="na.omit")
 
-    isx = (dim(covariates0)[2]>0) # there are covariates in the null model
+    isx = (dim(xe)[2]>0) # there are covariates in the null model
 
     if(sum(is.na(epsdata0) > 1)){
         stop("NA values in the data not allowed")}
 
-    l = min(cutoffs)
-    u = max(cutoffs)
+    y = epsdata0[,1]
 
     xg = as.matrix(xg)
     # if(dim(xg)[2]<2){
@@ -102,19 +94,37 @@ epsCC.rv.test = function(nullmodel,xg,cutoffs,randomindex,method = "naive",weigh
     # }
 
     if(missing(weights)){
+        message("weights = 1")
         weights = rep(1,dim(xg)[2])
     }
 
-    if(method == "naive"){
-        epsCC.rv.test.naive(epsdata0,covariates0,xg,isx,l,u,rsample, randomindex)
-    }else if(method == "collaps"){
-        g = rep(0,dim(xg)[1])
-        for(c in 1:dim(xg)[2]){
-            g = g + c(weights[c])*c(xg[,c])
+    if(!rsample){
+        if(isx){
+            if(method == "simple"){
+                wxg = t(t(xg)*weights)
+                eps_CC_test_simple_EX(y,xe,wxg,l,u)
+            }else if(method == "collapse"){
+                g = colSums(t(xg)*weights)
+                epsCC.test(y~xe,xg=g,l,u)
+            }else if(method == "varcomp"){
+                wxg = t(t(xg)*weights)
+                eps_CC_test_varcomp_EX(y,xe,wxg,l,u)
+            }
+        }else{
+            if(method == "simple"){
+                wxg = t(t(xg)*weights)
+                eps_CC_test_simple_E(y,wxg,l,u)
+            }else if(method == "collapse"){
+                g = colSums(t(xg)*weights)
+                epsCC.test(nullmodel,xg=g,l,u)
+            }else if(method == "varcomp"){
+                wxg = t(t(xg)*weights)
+                eps_CC_test_varcomp_E(y,wxg,l,u)
+            }
         }
-        epsCC.test(nullmodel,xg=g,cutoffs,randomindex)
-    }else if(method == "varcomp"){
-        epsCC.rv.test.varcomp(epsdata0,covariates0,xg,isx,l,u,rsample,randomindex,weights)
     }
+
+
+
 }
 

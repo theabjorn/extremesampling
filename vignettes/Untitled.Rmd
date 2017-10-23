@@ -1,0 +1,10 @@
+---
+title: "Preliminary EPS results"
+author: "Thea Bjornland"
+date: "10/10/2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```

@@ -13,7 +13,7 @@ describes the linear regression model under the null hypothesis, see details}
 \item{xg}{a matrix of variables to be tested against the null (NA for
 not genotyped individuals)}
 
-\item{confounder}{(optional) vector of names of confounding (non-genetic) covariates}
+\item{confounder}{confounding (non-genetic) covariates}
 }
 \value{
 \code{epsAC.test} returns

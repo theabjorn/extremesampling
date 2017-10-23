@@ -86,220 +86,29 @@ epsAC.test = function(nullmodel, xg, confounder){
         }
     }
 
-    totest = colnames(xg)
-    xg = as.matrix(xg)
-    ng = dim(xg)[2]
-
-
-    ###################################################################
-    # Test genetic covariates one by one
-    ###################################################################
-    statistic = matrix(NA,ncol = 1, nrow = ng)
-    pvalue = matrix(NA,ncol = 1, nrow = ng)
-    rownames(statistic) = totest
-    rownames(pvalue) = totest
-    colnames(statistic) = "t"
-    colnames(pvalue) = "p.value"
 
     if(isxe & !conf){
         ###############################################################
         # Environmental covariates (xe) present in the null model
         # No confounding assumed
         ###############################################################
-        fit = lm(y~xe) # Fit under H0
-        z = fit$residuals
-        sigma2 = sum(z^2)/n
-        sigma = sqrt(sigma2)
-        Xe = cbind(rep(1,n),xe)
 
-        meanimpute = function(g){
-            g[is.na(g)] = mean(g,na.rm=TRUE)
-            return(g)
-        }
-        xgm = apply(xg,2,meanimpute)
-        veg = crossprod(Xe,xgm)
-        veeinvveg = solve(crossprod(Xe,Xe))%*%veg
-        var1 = (colSums(xgm*xgm)-colSums(veg*veeinvveg))/sigma2
-        calcvar2 = function(g){
-            varg = var(g,na.rm=TRUE)
-            n_ic = sum(is.na(g))
-            n_cc = sum(!is.na(g))
-            return(varg*(sum(z[is.na(g)]^2) - sigma2*n_ic + (1/n_cc)*(sum(z[is.na(g)]))^2)/(sigma2^2))
-        }
-        var2 = apply(xg,2,calcvar2)
-
-        s = c(t(z)%*%xgm/sigma2)
-        Sigma = var1 - var2
-        t = (s*s)/Sigma
-        pval = pchisq(t,1,lower.tail=FALSE)
-
-        statistic = matrix(t,ncol = 1, nrow = ng)
-        pvalue = matrix(pval,ncol = 1, nrow = ng)
-        rownames(statistic) = totest
-        rownames(pvalue) = totest
-        colnames(statistic) = "t"
-        colnames(pvalue) = "p.value"
-        result = list(statistic,pvalue)
-        names(result) = c("statistic","p.value")
-        return(result)
+        eps_AC_test_x(y,xe,xg)
 
     }else if(isxe & conf){
         ###############################################################
         # Environmental covariates (xe) present in the null model
         # Confounding assumed
         ###############################################################
-        fit = lm(y~xe) # Fit under H0
-        z = fit$residuals
-        sigma2 = sum(z^2)/n
-        sigma = sqrt(sigma2)
 
-        Xe = cbind(rep(1,n),xe)
+        eps_AC_test_x_conf(y,xe,xec,xg)
 
-        ux = as.matrix(unique(xec))
-        nu = dim(ux)[1]
-
-        meanimpute = function(g){
-            for(u in 1:nu){
-                uindex_all = (xec == ux[u,])
-                gu = g[uindex_all]
-                gu[is.na(gu)] = mean(gu,na.rm=TRUE)
-                g[uindex_all] = gu
-            }
-            return(g)
-        }
-
-        xgm = apply(xg,2,meanimpute)
-        veg = crossprod(Xe,xgm)
-        veeinvveg = solve(crossprod(Xe,Xe))%*%veg
-        var1 = (colSums(xgm*xgm)-colSums(veg*veeinvveg))/sigma2
-
-        calcvar2 = function(g){
-            tmp = 0
-            for(u in 1:nu){
-                uindex_all = (xec == ux[u,])
-                gu = g[uindex_all]
-                varg = var(gu,na.rm=TRUE)
-                zu = z[uindex_all]
-                n_uic = sum(is.na(gu))
-                n_ucc = sum(!is.na(gu))
-                tmp = tmp + varg*(sum(zu[is.na(gu)]^2) - sigma2*n_uic + (1/n_ucc)*(sum(zu[is.na(gu)]))^2)/(sigma2^2)
-            }
-            return(tmp)
-        }
-        var2 = apply(xg,2,calcvar2)
-
-        s = c(t(z)%*%xgm/sigma2)
-        Sigma = var1 - var2
-        t = (s*s)/Sigma
-        pval = pchisq(t,1,lower.tail=FALSE)
-
-        statistic = matrix(t,ncol = 1, nrow = ng)
-        pvalue = matrix(pval,ncol = 1, nrow = ng)
-        rownames(statistic) = totest
-        rownames(pvalue) = totest
-        colnames(statistic) = "t"
-        colnames(pvalue) = "p.value"
-        result = list(statistic,pvalue)
-        names(result) = c("statistic","p.value")
-        return(result)
-    }else if(conf){
-        fit = lm(y~1) # Fit under H0
-        z = fit$residuals
-        sigma2 = sum(z^2)/n
-        sigma = sqrt(sigma2)
-
-        Xe = matrix(1,ncol=1,nrow = n)
-
-        ux = as.matrix(unique(xec))
-        nu = dim(ux)[1]
-
-        meanimpute = function(g){
-            for(u in 1:nu){
-                uindex_all = (xec == ux[u,])
-                gu = g[uindex_all]
-                gu[is.na(gu)] = mean(gu,na.rm=TRUE)
-                g[uindex_all] = gu
-            }
-            return(g)
-        }
-
-        xgm = apply(xg,2,meanimpute)
-        veg = crossprod(Xe,xgm)
-        veeinvveg = solve(crossprod(Xe,Xe))%*%veg
-        var1 = (colSums(xgm*xgm)-colSums(veg*veeinvveg))/sigma2
-
-        calcvar2 = function(g){
-            tmp = 0
-            for(u in 1:nu){
-                uindex_all = (xec == ux[u,])
-                gu = g[uindex_all]
-                varg = var(gu,na.rm=TRUE)
-                zu = z[uindex_all]
-                n_uic = sum(is.na(gu))
-                n_ucc = sum(!is.na(gu))
-                tmp = tmp + varg*(sum(zu[is.na(gu)]^2) - sigma2*n_uic + (1/n_ucc)*(sum(zu[is.na(gu)]))^2)/(sigma2^2)
-            }
-            return(tmp)
-        }
-        var2 = apply(xg,2,calcvar2)
-
-        #s = c(t(z[!is.na(xg[,1])])%*%xg[!is.na(xg[,1]),]/sigma2)
-        s = c(t(z)%*%xgm/sigma2)
-        Sigma = var1 - var2
-        t = (s*s)/Sigma
-        pval = pchisq(t,1,lower.tail=FALSE)
-
-        statistic = matrix(t,ncol = 1, nrow = ng)
-        pvalue = matrix(pval,ncol = 1, nrow = ng)
-        rownames(statistic) = totest
-        rownames(pvalue) = totest
-        colnames(statistic) = "t"
-        colnames(pvalue) = "p.value"
-        result = list(statistic,pvalue)
-        names(result) = c("statistic","p.value")
-        return(result)
     }else{
         ##############################################################
         # no environmental covariates (xe) present in the null model
         ##############################################################
-        fit = lm(y~1) # Fit under H0
-        z = fit$residuals
-        sigma2 = sum(z^2)/n
-        sigma = sqrt(sigma2)
 
-        Xe = matrix(1,ncol=1,nrow = n)
-
-        meanimpute = function(g){
-            g[is.na(g)] = mean(g,na.rm=TRUE)
-            return(g)
-        }
-        xgm = apply(xg,2,meanimpute)
-        veg = crossprod(Xe,xgm)
-        veeinvveg = solve(crossprod(Xe,Xe))%*%veg
-        var1 = (colSums(xgm*xgm)-colSums(veg*veeinvveg))/sigma2
-        calcvar2 = function(g){
-            varg = var(g,na.rm=TRUE)
-            n_ic = sum(is.na(g))
-            n_cc = sum(!is.na(g))
-            return(varg*(sum(z[is.na(g)]^2) - sigma2*n_ic + (1/n_cc)*(sum(z[is.na(g)]))^2)/(sigma2^2))
-        }
-        var2 = apply(xg,2,calcvar2)
-
-        s = c(t(z)%*%xgm/sigma2)
-        #s = c(t(z[!is.na(xg[,1])])%*%xg[!is.na(xg[,1]),]/sigma2)
-        Sigma = var1 - var2
-        t = (s*s)/Sigma
-        pval = pchisq(t,1,lower.tail=FALSE)
-
-        statistic = matrix(t,ncol = 1, nrow = ng)
-        pvalue = matrix(pval,ncol = 1, nrow = ng)
-        rownames(statistic) = totest
-        rownames(pvalue) = totest
-        colnames(statistic) = "t"
-        colnames(pvalue) = "p.value"
-        result = list(statistic,pvalue)
-        names(result) = c("statistic","p.value")
-        return(result)
+        eps_AC_test_nox(y,xg)
 
     }
 

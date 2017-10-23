@@ -4,7 +4,7 @@
 \alias{epsCC.rv.test}
 \title{Score test EPS-CC rare variants}
 \usage{
-epsCC.rv.test(nullmodel, xg, cutoffs, randomindex, method = "naive", weights)
+epsCC.rv.test(nullmodel, xg, cutoffs, randomindex, method = "simple", weights)
 }
 \arguments{
 \item{nullmodel}{an object of class \code{\link[stats]{formula}}, that
@@ -18,7 +18,7 @@ for extreme sampling}
 \item{randomindex}{a binary vector that indicates if samples are random
 or extreme}
 
-\item{method}{testing the burden using \code{naive}, \code{collapsing} or
+\item{method}{testing the burden using \code{simple}, \code{collapsing} or
 \code{varcomp} method, see details}
 
 \item{weights}{optional weights for the \code{collapsing} or
@@ -49,10 +49,15 @@ for individuals with high and low values of the phenotype \code{y};
 individuals. The cut-offs \code{l} and \code{u} that specify the
 sampling must be given in the \code{cutoffs} argument.
 
-The \code{naive} method uses a standard score test to test the burden,
-the \code{collaps} method tests the (weighted) sum of all variants in the
+The \code{simple} method uses a standard score test to test the burden,
+the \code{collapse} method tests the (weighted) sum of all variants in the
 burden, while the \code{varcomp} method is a (weighted) variance
 component score test.
+
+The \code{varcomp} method is a special case of the popular SKAT method
+for a linear weighted kernel under extreme phenotype sampling. The p-value is found
+using the function \code{\link[CompQuadForm]{davies}} in the CompQuadForm
+package.
 }
 \examples{
 N = 5000 # Number of individuals in a population
@@ -83,4 +88,15 @@ epsCC.rv.test(y~xe,xg=xg,cutoffs = c(l,u),method = "collaps",weights)
 # Variance component test (assume linear mixed model)
 epsCC.rv.test(y~xe,xg=xg,cutoffs = c(l,u),method = "varcomp",weights)
 
+}
+\references{
+\insertRef{quadRpackage}{extremesampling},
+
+\insertRef{wu2011SKAT}{extremesampling}
+}
+\seealso{
+\code{\link[SKAT]{SKAT}} for the SKAT test for random samples,
+\code{\link[CompQuadForm]{davies}} for the Davies method,
+\code{\link{epsCC.test}} for a common variant SNP by SNP test for
+complete-case extreme sampling
 }
