@@ -107,14 +107,14 @@ epsAC.rv.test = function(nullmodel,xg,confounder,method = "simple",weights){
         if(!conf){
             if(method == "simple"){
                 res = eps_AC_test_rv_X(y,xe,xg,weights)
-                t = crossprod(res[[1]],crossprod(solve(res[[2]]),res[[1]]))
+                t = crossprod(res[[1]],crossprod(ginv(res[[2]]),res[[1]]))
                 pvalue = pchisq(t,ng,lower.tail=FALSE)
                 statistic = t
                 result = list(statistic,pvalue)
                 names(result) = c("statistic","p.value")
                 return(result)
             }else if(method == "collapse"){
-                g = colSums(t(xg)*weights)
+                g = colSums(t(xg)*(weights)^2)
                 epsAC.test(y~xe,xg=g)
             }else if(method == "varcomp"){
                 res = eps_AC_test_rv_X(y,xe,xg,weights)
@@ -129,14 +129,14 @@ epsAC.rv.test = function(nullmodel,xg,confounder,method = "simple",weights){
             if(method == "simple"){
                 message(paste("Confounding assumed"))
                 res = eps_AC_test_rv_X_conf(y,xe,xec,xg,weights)
-                t = crossprod(res[[1]],crossprod(solve(res[[2]]),res[[1]]))
+                t = crossprod(res[[1]],crossprod(ginv(res[[2]]),res[[1]]))
                 pvalue = pchisq(t,ng,lower.tail=FALSE)
                 statistic = t
                 result = list(statistic,pvalue)
                 names(result) = c("statistic","p.value")
                 return(result)
             }else if(method == "collapse"){
-                g = colSums(t(xg)*weights)
+                g = colSums(t(xg)*(weights)^2)
                 epsAC.test(y~xe,xg=g,confounder = confounder)
             }else if(method == "varcomp"){
                 message(paste("Confounding assumed"))
@@ -152,14 +152,14 @@ epsAC.rv.test = function(nullmodel,xg,confounder,method = "simple",weights){
     }else{
         if(method == "simple"){
             res = eps_AC_test_rv_noX(y,xg,weights)
-            t = crossprod(res[[1]],crossprod(solve(res[[2]]),res[[1]]))
+            t = crossprod(res[[1]],crossprod(ginv(res[[2]]),res[[1]]))
             pvalue = pchisq(t,ng,lower.tail=FALSE)
             statistic = t
             result = list(statistic,pvalue)
             names(result) = c("statistic","p.value")
             return(result)
         }else if(method == "collapse"){
-            g = colSums(t(xg)*weights)
+            g =colSums(t(xg)*(weights)^2)
             epsAC.test(y~1,xg=g)
         }else if(method == "varcomp"){
             res = eps_AC_test_rv_noX(y,xg,weights)

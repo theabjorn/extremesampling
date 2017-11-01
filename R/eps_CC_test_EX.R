@@ -41,8 +41,6 @@ eps_CC_test_ex = function(y,xe,xg,l,u){
                 cbind(I11_21, I11_22))
     # I11 equal for all g_i (ne+1 x ne+1) (beta, sigma)
 
-    colSums(a*xg*xg)
-
     I22 = colSums(a*xg*xg)   # t(g_i)%*%Diag(a)%*%g_i, one value for each g_i
 
     I21 = crossprod(xg,cbind(Xe*a,b))

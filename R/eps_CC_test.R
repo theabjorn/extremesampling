@@ -44,8 +44,8 @@ epsCC.test = function(nullmodel,xg,l,u,randomindex){
         rsample = FALSE
     }
 
+    xg = as.matrix(xg)
     if(is.null(colnames(xg))){
-        xg = as.matrix(xg)
         colnames(xg) = paste0("xg",1:dim(xg)[2])}
 
     options(na.action="na.pass")

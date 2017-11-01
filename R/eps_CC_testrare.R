@@ -103,7 +103,7 @@ epsCC.rv.test = function(nullmodel,xg,l,u,randomindex,method = "simple",weights)
                 wxg = t(t(xg)*weights)
                 eps_CC_test_simple_EX(y,xe,wxg,l,u)
             }else if(method == "collapse"){
-                g = colSums(t(xg)*weights)
+                g = colSums(t(xg)*(weights)^2)
                 epsCC.test(y~xe,xg=g,l,u)
             }else if(method == "varcomp"){
                 wxg = t(t(xg)*weights)
@@ -114,7 +114,7 @@ epsCC.rv.test = function(nullmodel,xg,l,u,randomindex,method = "simple",weights)
                 wxg = t(t(xg)*weights)
                 eps_CC_test_simple_E(y,wxg,l,u)
             }else if(method == "collapse"){
-                g = colSums(t(xg)*weights)
+                g = colSums(t(xg)*(weights)^2)
                 epsCC.test(nullmodel,xg=g,l,u)
             }else if(method == "varcomp"){
                 wxg = t(t(xg)*weights)

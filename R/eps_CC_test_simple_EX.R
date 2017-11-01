@@ -47,7 +47,7 @@ eps_CC_test_simple_EX = function(y,xe,xg,l,u){
 
     s = crossprod(xg,y-xbeta + sigma*h0)/sigma2
 
-    t = crossprod(s,crossprod(solve(Sigma),s))
+    t = crossprod(s,crossprod(ginv(Sigma),s))
 
     pvalue = pchisq(t,ng,lower.tail=FALSE)
     statistic = t
