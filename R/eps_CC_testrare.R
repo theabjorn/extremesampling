@@ -100,8 +100,7 @@ epsCC.rv.test = function(nullmodel,xg,l,u,randomindex,method = "simple",weights)
     if(!rsample){
         if(isx){
             if(method == "simple"){
-                wxg = t(t(xg)*weights)
-                eps_CC_test_simple_EX(y,xe,wxg,l,u)
+                eps_CC_test_simple_EX(y,xe,xg,l,u)
             }else if(method == "collapse"){
                 g = colSums(t(xg)*(weights)^2)
                 epsCC.test(y~xe,xg=g,l,u)
@@ -111,8 +110,7 @@ epsCC.rv.test = function(nullmodel,xg,l,u,randomindex,method = "simple",weights)
             }
         }else{
             if(method == "simple"){
-                wxg = t(t(xg)*weights)
-                eps_CC_test_simple_E(y,wxg,l,u)
+                eps_CC_test_simple_E(y,xg,l,u)
             }else if(method == "collapse"){
                 g = colSums(t(xg)*(weights)^2)
                 epsCC.test(nullmodel,xg=g,l,u)
