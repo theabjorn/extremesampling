@@ -4,15 +4,19 @@ eps_CC_test_simple_E = function(y,xg,l,u){
 
     n = length(y)
     ng = dim(xg)[2]
+    Xe = cbind(rep(1,n))
 
-    fit = epsCC.loglikmax(cbind(y),l,u) # Fit under H0
-    alpha = fit[1]
+    # Make one test statistics for ng genetic variants simultaneuosly
+
+    fit = epsCC.loglikmax(cbind(y),l,u)
+    beta = fit[1:(length(fit)-1)]
     sigma = fit[length(fit)]
     sigma2 = sigma*sigma
 
-    f = y-alpha
-    zl = (l-alpha)/sigma
-    zu = (u-alpha)/sigma
+    xbeta = Xe%*%beta
+    f = y-xbeta
+    zl = (l-xbeta)/sigma
+    zu = (u-xbeta)/sigma
 
     h0 = (-dnorm(zu)+dnorm(zl))/(1-pnorm(zu)+pnorm(zl))
     h1 = (-dnorm(zu)*zu+dnorm(zl)*zl)/(1-pnorm(zu)+pnorm(zl))
@@ -23,23 +27,25 @@ eps_CC_test_simple_E = function(y,xg,l,u){
     b = c(- h0 - h2 - h0*h1)
     c = 2 - c(h1 + h3 + h1*h1)
 
-    I11_11 = n*a
-    I11_33 = n*c
+    I11_11 = crossprod(Xe,Xe*a) # t(Xe)%*%(diag(a)%*%Xe)
 
-    I11_31 = n*b; I11_13 = t(I11_31)
+    I11_22 = sum(c)
 
-    I11 = cbind(rbind(I11_11,I11_31),
-                rbind(I11_13,I11_33))
+    I11_12 = crossprod(Xe,b) # t(Xe)%*%(b)
+    I11_21 = t(I11_12)
 
-    I22 = a*crossprod(xg,xg)
+    I11 = rbind(cbind(I11_11, I11_12),
+                cbind(I11_21, I11_22))
 
-    I12 = crossprod(xg,cbind(rep(a,n),rep(b,n)))
+    I22 = crossprod(xg,xg*a)
+
+    I12 = crossprod(xg,cbind(Xe*a,b))
 
     Sigma = (I22 - I12%*%tcrossprod(solve(I11),I12))/sigma2
 
-    s = crossprod(xg,y-alpha + sigma*h0)/sigma2
+    s = crossprod(xg,y-xbeta + sigma*h0)/sigma2
 
-    t = crossprod(s,crossprod(solve(Sigma),s))
+    t = crossprod(s,crossprod(ginv(Sigma),s))
 
     pvalue = pchisq(t,ng,lower.tail=FALSE)
     statistic = t
