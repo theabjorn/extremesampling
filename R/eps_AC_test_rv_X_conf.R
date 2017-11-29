@@ -17,7 +17,7 @@ eps_AC_test_rv_X_conf = function(y,xe,xec,xg,w){
 
     meanimpute = function(g){
         for(u in 1:nu){
-            uindex_all = (xec == ux[u,])
+            uindex_all = rowSums(t(t(xec) == ux[u,])) == dim(xec)[2]
             gu = g[uindex_all]
             gu[is.na(gu)] = mean(gu,na.rm=TRUE)
             g[uindex_all] = gu
@@ -40,7 +40,7 @@ eps_AC_test_rv_X_conf = function(y,xe,xec,xg,w){
 
     tmp = 0*1
     for(u in 1:nu){
-        uindex_all = (xec == ux[u,])
+        uindex_all = rowSums(t(t(xec) == ux[u,])) == dim(xec)[2]
         gu = xgw[uindex_all,]
         varg = var(gu,na.rm=TRUE)
         zu = z[uindex_all]

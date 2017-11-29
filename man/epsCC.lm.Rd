@@ -47,29 +47,6 @@ Thus, the data set must consist of observations only for extreme individuals
 of the linear regression model.
 }
 \examples{
-N = 5000 # Number of individuals in a population
-xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
-xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
-xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
-# Model parameters
-a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
-# Generate response y
-y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
-# Identify extremes, here upper and lower 25\% of population
-u = quantile(y,probs = 3/4,na.rm=TRUE)
-l = quantile(y,probs = 1/4,na.rm=TRUE)
-extreme = (y < l) | (y >= u)
-# Create the EPS-only data set
-y = y[extreme]
-xe1 = xe1[extreme]
-xe2 = xe2[extreme]
-xg1 = xg1[extreme]
-xg2 = xg2[extreme]
-xg = as.matrix(cbind(xg1,xg2))
-xe = as.matrix(cbind(xe1,xe2))
 
-epsCC.lm(y~xe1+xe2+xg1+xg2,cutoffs = c(l,u))
-epsCC.lm(y~xe+xg,cutoffs = c(l,u))
-epsCC.lm(y~xe1+xe2+xg1+xg2+xe2*xg1,cutoffs = c(l,u))$coefficients
+
 }

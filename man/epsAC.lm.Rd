@@ -60,33 +60,5 @@ for different levels of other (non-genetic) covariates, these can
 be specified by a vector of names \code{cx}.
 }
 \examples{
-N = 5000 # Number of individuals in a population
-xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
-xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-xg1 = sample(c(0,1,2),N,c(0.4,0.3,0.3), replace = TRUE) # SNP
-xg2 = sample(c(0,1,2),N,c(0.5,0.3,0.2), replace = TRUE) # SNP
-# Model parameters
-a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
-# Generate response y
-y = rnorm(N, mean = a + be1*xe1 + be2*xe2 + bg1*xg1 + bg2*xg2, sd = sigma)
-# Identify extremes, here upper and lower 25\% of population
-u = quantile(y,probs = 3/4,na.rm=TRUE)
-l = quantile(y,probs = 1/4,na.rm=TRUE)
-extreme = (y < l) | (y >= u)
-# Create the EPS-full data set by setting
-# the SNP values of non-extremes to NA
-xg1[!extreme] = NA
-xg2[!extreme] = NA
-xg = as.matrix(cbind(xg1,xg2))
-xe = as.matrix(cbind(xe1,xe2))
-
-# Fit model
-epsAC.lm(y~xe1+xe2+xg1+xg2)
-# Alternatives
-# epsAC.lm(y~xe+xg)
-# epsAC.lm(y~xe+xg,hwe = TRUE)
-
-# Model with interaction term
-epsAC.lm(y~xe1+xe2+xg1+xg2+xe1*xg2)
 
 }

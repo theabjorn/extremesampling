@@ -9,11 +9,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This package provides functions for testing hypothesis of genetic association with trait
-for data from the extreme phenotype sampling (EPS) design.
-
-For details on the EPS design and methods, please see our paper "Improving power of genetic association studies by extreme phenotype sampling: a review and some new results"; 
-arXiv preprint arXiv:1701.01286 (https://arxiv.org/abs/1701.01286)
+This package provides functions for testing hypothesis of genetic association with a continously measurable trait for data from the extreme phenotype sampling (EPS) design.
 
 
 ```{r}
@@ -27,64 +23,170 @@ standard deviation `sigma`.
 Here, `xg` represents genetic covariates in the form of SNPs (single-nucleotide
 polymorphisms), while `xe` represents non-genetic covariates, if any. 
 
-In EPS, selective genotyping is based on extreme phenotype
-individuals.
-
-# Y-extreme sampling
 Extreme phenotypes are defined by lower and upper cutoffs, `l` 
-and `u` and SNP genotypes are obtained for individuals with `y < l` 
-or `y > u`.
+and `u` and SNP genotypes are obtained only for individuals with `y < l` 
+or `y > u`. The cut-offs can be specific for each individual.
 
-### EPS complete-case (EPS-CC)
+## Single-variant association tests
 
-For the **EPS complete-case** method, variables (`y,xe,xg`) are only 
-considered for for extreme phenotype individual.  The values of the lower and 
-upper cutoffs (`l,u`) must be known.
-
-The following data will be used for illustrating EPS-CC functions. 
+The following data set is meant to illustrate single-variant association testing under the
+z-extreme sampling design.
 
 ```{r}
-    # Generate data set of the type EPS-CC
-
     N = 5000 # Number of individuals in a population
     xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
     xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-    xg1 = rbinom(N,2,0.4) # SNP
-    xg2 = rbinom(N,2,0.1) # SNP
+    xg1 = rbinom(N,2,0.25) # SNP
     
-    # Model parameters
-    a = 50; be1 = 5; be2 = 8; bg1 = 0.3; bg2 = 0.6; sigma = 2
+    # Generate phenotype
+    y = rnorm(N, mean = 10+5*xe1+1*xe2+0.5*xg1, sd = 4)
     
-    # Generate response y (phenotype)
-    y = rnorm(N, mean = a+be1*xe1+be2*xe2+bg1*xg1+bg2*xg2, sd = sigma)
+    # Identify extremes, here upper and lower 25% of residual phenotype distribution
+    z = lm(y~xe1+xe2)$residuals
+    uz = quantile(z,probs = 3/4,na.rm=TRUE)
+    lz = quantile(z,probs = 1/4,na.rm=TRUE)
+    extreme = (z < lz) | (z >= uz)
+    li = lz + (y[extreme]-z[extreme]); ui = uz + (y[extreme]-z[extreme])
     
-    # Identify extremes, here upper and lower 25% of population
-    u = quantile(y,probs = 3/4,na.rm=TRUE)
-    l = quantile(y,probs = 1/4,na.rm=TRUE)
-    extreme = (y < l) | (y >= u)
+    # Create the EPS complete case data set
+    yCC = y[extreme]; zCC = z[extreme]
+    xe1CC = xe1[extreme]; xe2CC = xe2[extreme]
+    xg1CC = xg1[extreme]
     
-    # Create the EPS-only data set
-    y = y[extreme]
-    xe1 = xe1[extreme]
-    xe2 = xe2[extreme]
-    xg1 = xg1[extreme]
-    xg2 = xg2[extreme]
-    
-    # Matrix form of covariates
-    xg = as.matrix(cbind(xg1,xg2))
-    xe = as.matrix(cbind(xe1,xe2))
+    # Create the EPS all case data set
+    yAC = y; zAC = z
+    xe1AC = xe1; xe2AC = xe2
+    xg1AC = xg1; xg1AC[!extreme] = NA
 ```
 
-First we consider testing in the EPS-CC design. Here are a few key examples.
-
-Example 1.1) Test $H0: \beta_g = 0$ against $H1: \beta_g \neq 0$ for 
-each genetic covariate at a time. Each genetic variable is 
-tested against the null model `y = a + be*xe + e`.
+### Complete case tests
 
 ```{r}
-    # 1.1) Perform two-sided test for one genetic covariate at a time
-    epsCC.test(y~xe1+xe2, xg=cbind(xg1,xg2), l,u)$p.value
-    # or using matrix form
-    # epsCC.test(y~xe, xg=xg, cutoffs=c(l,u))$p.value
+
+cc = epsCC.test(yCC~xe1CC + xe2CC, xg = xg1CC, l = li, u = ui)
+cc$statistic
+cc$p.value
+
+# The complete case test under z-extreme sampling is (at least asymptotically) 
+# equal to the score test for random samples. 
+# We show this by using glm.scoretest in the Statmod package.
+
+library(statmod)
+lm0 = glm(yCC~xe1CC + xe2CC)
+tRand = glm.scoretest(lm0,xg1CC)^2
+pRand = pchisq(tRand,1,lower.tail = FALSE)
+tRand
+pRand
+
+# Residual-based test (equal to above test when xg is not correlated with xe)
+
+ccres= epsCC.test(zCC~1, xg = xg1CC, l = lz, u = uz)
+ccres$statistic
+ccres$p.value
+
+```
+
+### All case tests
+
+```{r}
+# The all case test is approximately equal to the complete case test under z-extreme sampling
+ac = epsAC.test(yAC~xe1AC + xe2AC, xg = xg1AC)
+ac$statistic
+ac$p.value
+
+# If confounding assumed (xe2 discrete non-genetic covariate)
+ac_conf = epsAC.test(yAC~xe1AC + xe2AC, xg = xg1AC, confounder = xe2AC)
+ac_conf$statistic
+ac_conf$p.value
+
+# Residual-based test 
+acres = epsAC.test(zAC~1, xg = xg1AC)
+acres$statistic
+acres$p.value
+
+```
+
+## Multiple-variant association tests
+These tests are especially derived for rare variant association testing. 
+
+```{r}
+    N = 5000 # Number of individuals in a population
+    xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
+    xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
+    Gmat = cbind(rbinom(N,2,0.04),rbinom(N,2,0.03),rbinom(N,2,0.02),
+                 rbinom(N,2,0.01),rbinom(N,2,0.01),rbinom(N,2,0.01)) # rare variants
+    
+    # Generate phenotype
+    betag = c(0.1,-0.1,0.3,0.5,-0.2,0)
+    y = rnorm(N, mean = 10+5*xe1+1*xe2+Gmat%*%betag, sd = 4)
+    
+    # Identify extremes, here upper and lower 25% of residual phenotype distribution
+    z = lm(y~xe1+xe2)$residuals
+    uz = quantile(z,probs = 3/4,na.rm=TRUE)
+    lz = quantile(z,probs = 1/4,na.rm=TRUE)
+    extreme = (z < lz) | (z >= uz)
+    li = lz + (y[extreme]-z[extreme]); ui = uz + (y[extreme]-z[extreme])
+    
+    # Create the EPS complete case data set
+    yCC = y[extreme]; zCC = z[extreme]
+    xe1CC = xe1[extreme]; xe2CC = xe2[extreme]
+    GmatCC = Gmat[extreme,]
+    
+    # Create the EPS all case data set
+    yAC = y; zAC = z
+    xe1AC = xe1; xe2AC = xe2
+    GmatAC = Gmat; GmatAC[!extreme,] = NA
+```
+
+### Complete case tests
+
+```{r}
+
+# Direct test of all 6 variants
+epsCC.rv.test(yCC~xe1CC + xe2CC, xg = GmatCC, l = li, u = ui)$p.value
+
+# Collapsing test (weights = 1 for all variants)
+epsCC.rv.test(yCC~xe1CC + xe2CC, xg = GmatCC, l = li, u = ui, method = "collapse")$p.value
+
+# Variance component test (weights = 1 for all variants)
+epsCC.rv.test(yCC~xe1CC + xe2CC, xg = GmatCC, l = li, u = ui, method = "varcomp")$p.value
+
+
+# Residual-based tests
+# Direct test of all 6 variants
+epsCC.rv.test(zCC~1, xg = GmatCC, l = lz, u = uz)$p.value
+
+# Collapsing test (weights = 1 for all variants)
+epsCC.rv.test(zCC~1, xg = GmatCC, l = lz, u = uz, method = "collapse")$p.value
+
+# Variance component test (weights = 1 for all variants)
+epsCC.rv.test(zCC~1, xg = GmatCC, l = lz, u = uz, method = "varcomp")$p.value
+
+
+```
+
+### All case tests
+
+```{r}
+
+# Direct test of all 6 variants
+epsAC.rv.test(yAC~xe1AC + xe2AC, xg = GmatAC)$p.value
+
+# Collapsing test (weights = 1 for all variants)
+epsAC.rv.test(yAC~xe1AC + xe2AC, xg = GmatAC, method = "collapse")$p.value
+
+# Variance component test (weights = 1 for all variants)
+epsAC.rv.test(yAC~xe1AC + xe2AC, xg = GmatAC, method = "varcomp")$p.value
+
+# Residual-based tests
+# Direct test of all 6 variants
+epsAC.rv.test(zAC~1, xg = GmatAC)$p.value
+
+# Collapsing test (weights = 1 for all variants)
+epsAC.rv.test(zAC~1, xg = GmatAC, method = "collapse")$p.value
+
+# Variance component test (weights = 1 for all variants)
+epsAC.rv.test(zAC~1, xg = GmatAC, method = "varcomp")$p.value
+
 ```
 

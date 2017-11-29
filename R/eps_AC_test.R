@@ -49,12 +49,16 @@ epsAC.test = function(nullmodel, xg, confounder){
     n = length(y)
 
     conf = FALSE
+
     if(!missing(confounder)){
         conf = TRUE
         xec = as.matrix(confounder)
+        if(dim(xec)[1]!=n){
+            stop("Confounder has incorrect dimension")
+        }
         for(j in 1:dim(xec)[2]){
-        if(length(unique(xec[,j])) > 10){
-            stop("Only discrete confounders with less than or equal to 10 unique levels are accepted as confounders.
+        if(length(unique(xec[,j])) > 50){
+            stop("Only discrete confounders with less than or equal to 50 unique levels are accepted as confounders.
                  Please recode you confounder to satisfy this.")
             }
         }
