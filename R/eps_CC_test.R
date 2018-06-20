@@ -7,8 +7,6 @@
 #' @param xg a matrix of genetic variants to be tested against the null
 #' @param l cutoff for lower extreme, can be sample-specific or general
 #' @param u cutoff for upper extreme, can be sample-specific or general
-#' @param randomindex a binary vector that indicates if samples are random
-#' or extreme
 #' @return \code{epsCC.test} returns for each genetic variant:
 #' \item{statistic}{the score test statistic}
 #' \item{p.value}{the P-value}
@@ -33,16 +31,10 @@
 #' @examples
 #' epsCC.test(phenoCV_CC ~ xeCV_CC,xg = gCV_CC,lCV,uCV)
 
-epsCC.test = function(nullmodel,xg,l,u,randomindex){
+epsCC.test = function(nullmodel,xg,l,u){
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
 
-    rsample = TRUE
-    if(missing(randomindex)){
-        rsample = FALSE
-    }else if(sum(randomindex)==0){
-        rsample = FALSE
-    }
 
     xg = as.matrix(xg)
     if(is.null(colnames(xg))){
@@ -60,47 +52,24 @@ epsCC.test = function(nullmodel,xg,l,u,randomindex){
     if(sum(is.na(epsdata0) > 1)){
         stop("NA values in the data not allowed")}
 
-    if(!rsample){
-        ###################################################################
-        # No random sample, extreme-phenotype individuals only
-        ###################################################################
-        message("EPS complete-case analysis with no random samples")
+    ###################################################################
+    # No random sample, extreme-phenotype individuals only
+    ###################################################################
+    if(sum((y>l & y<u))>0){
+        stop("Incorrect data format")}
 
-        if(sum((y>l & y<u))>0){
-            stop("Incorrect data format")}
+    if(isx){
+        ###############################################################
+        # Covariates present in the null model
+        ###############################################################
+        eps_CC_test_ex(y,xe,xg,l,u)
 
-        if(isx){
-            ###############################################################
-            # Covariates present in the null model
-            ###############################################################
-            eps_CC_test_ex(y,xe,xg,l,u)
-
-        }else{
-            ##############################################################
-            # No covariates present in the null model
-            ##############################################################
-            # = score test for random sample
-            #stop("No covariates, use score test for random samples")
-            eps_CC_test_e(y,xg,l,u)
-        }
     }else{
-        ###################################################################
-        # Extremes + random sample
-        ###################################################################
-        message("EPS complete-case test with random samples")
-
-        stop("Not available at this time")
-
-        if(isx){
-            ###############################################################
-            # Covariates present in the null model
-            ###############################################################
-            eps_CC_test_rsx(y,xe,xg,l,u,randomindex)
-        }else{
-            ##############################################################
-            # No covariates present in the null model
-            ##############################################################
-            eps_CC_test_rs(y,xg,l,u,randomindex)
-        }
+        ##############################################################
+        # No covariates present in the null model
+        ##############################################################
+        # = score test for random sample
+        #stop("No covariates, use score test for random samples")
+        eps_CC_test_e(y,xg,l,u)
     }
 }

@@ -85,7 +85,6 @@ epsAC.test = function(nullmodel, xg, confounder){
         # Environmental covariates (xe) present in the null model
         # Confounding assumed
         ###############################################################
-        message(paste("Confounding assumed"))
         eps_AC_test_x_conf(y,xe,xec,xg)
 
     }else{

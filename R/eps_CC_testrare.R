@@ -7,8 +7,6 @@
 #' @param xg a matrix of genetic variants to be tested against the null
 #' @param l cutoff for lower extreme, can be sample-specific or general
 #' @param u cutoff for upper extreme, can be sample-specific or general
-#' @param randomindex a binary vector that indicates if samples are random
-#' or extreme
 #' @param method testing the burden using \code{simple}, \code{collapsing} or
 #' \code{varcomp} method, see details
 #' @param weights optional weights
@@ -64,16 +62,9 @@
 #' epsCC.rv.test(phenoRV_CC~xeRV_CC,xg=gRV_CC,l=lRV,u=uRV,method = "varcomp")
 #'
 
-epsCC.rv.test = function(nullmodel,xg,l,u,randomindex,method = "simple",weights){
+epsCC.rv.test = function(nullmodel,xg,l,u,method = "simple",weights){
     if(class(nullmodel)!="formula"){
         stop("First argument must be of class formula")}
-
-    rsample = TRUE
-    if(missing(randomindex)){
-        rsample = FALSE
-    }else if(sum(randomindex)==0){
-        rsample = FALSE
-    }
 
     options(na.action="na.pass")
         epsdata0 = model.frame(nullmodel)
@@ -97,27 +88,25 @@ epsCC.rv.test = function(nullmodel,xg,l,u,randomindex,method = "simple",weights)
         weights = rep(1,dim(xg)[2])
     }
 
-    if(!rsample){
-        if(isx){
-            if(method == "simple"){
-                eps_CC_test_simple_EX(y,xe,xg,l,u)
-            }else if(method == "collapse"){
-                g = colSums(t(xg)*(weights)^2)
-                epsCC.test(y~xe,xg=g,l,u)
-            }else if(method == "varcomp"){
-                wxg = t(t(xg)*weights)
-                eps_CC_test_varcomp_EX(y,xe,wxg,l,u)
-            }
-        }else{
-            if(method == "simple"){
-                eps_CC_test_simple_E(y,xg,l,u)
-            }else if(method == "collapse"){
-                g = colSums(t(xg)*(weights)^2)
-                epsCC.test(nullmodel,xg=g,l,u)
-            }else if(method == "varcomp"){
-                wxg = t(t(xg)*weights)
-                eps_CC_test_varcomp_E(y,wxg,l,u)
-            }
+    if(isx){
+        if(method == "simple"){
+            eps_CC_test_simple_EX(y,xe,xg,l,u)
+        }else if(method == "collapse"){
+            g = colSums(t(xg)*(weights)^2)
+            epsCC.test(y~xe,xg=g,l,u)
+        }else if(method == "varcomp"){
+            wxg = t(t(xg)*weights)
+            eps_CC_test_varcomp_EX(y,xe,wxg,l,u)
+        }
+    }else{
+        if(method == "simple"){
+            eps_CC_test_simple_E(y,xg,l,u)
+        }else if(method == "collapse"){
+            g = colSums(t(xg)*(weights)^2)
+            epsCC.test(nullmodel,xg=g,l,u)
+        }else if(method == "varcomp"){
+            wxg = t(t(xg)*weights)
+            eps_CC_test_varcomp_E(y,wxg,l,u)
         }
     }
 
