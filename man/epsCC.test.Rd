@@ -4,7 +4,7 @@
 \alias{epsCC.test}
 \title{Score test EPS-CC}
 \usage{
-epsCC.test(nullmodel, xg, l, u, randomindex)
+epsCC.test(nullmodel, xg, l, u)
 }
 \arguments{
 \item{nullmodel}{an object of class \code{\link[stats]{formula}}, that
@@ -15,9 +15,6 @@ describes the linear regression model under the null hypothesis}
 \item{l}{cutoff for lower extreme, can be sample-specific or general}
 
 \item{u}{cutoff for upper extreme, can be sample-specific or general}
-
-\item{randomindex}{a binary vector that indicates if samples are random
-or extreme}
 }
 \value{
 \code{epsCC.test} returns for each genetic variant:

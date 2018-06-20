@@ -3,8 +3,8 @@
 #' \code{epsCC.lm} fits a normal linear regression model to EPS-only data
 #' @param formula an object of class \code{\link[stats]{formula}}, that
 #' describes the linear regression model to be fitted, see details
-#' @param cutoffs a vector \code{c(l,u)} of the lower and upper cut-offs used
-#' for extreme sampling
+#' @param l cutoff for lower extreme, can be sample-specific or general
+#' @param u cutoff for upper extreme, can be sample-specific or general
 #' @return Maximum likelihood estimates of the model parameters,
 #' with 95 percent confidence intervals
 #' \item{coefficients}{a vector of maximum likelihood estimates of
@@ -23,8 +23,7 @@
 #'
 #' The EPS-only design is such that data is only available
 #' for individuals with high and low values of the phenotype \code{y}. The
-#' cut-offs \code{l} and \code{u} that specify the sampling must be specified
-#' in the \code{cutoffs} argument.
+#' cut-offs \code{l} and \code{u} that specify the sampling must be given
 #'
 #' Thus, the data set must consist of observations only for extreme individuals
 #' \code{y > u} or \code{y < l} where \code{y} is the response (phenotype)
@@ -36,11 +35,9 @@
 #'
 #'
 
-epsCC.lm = function(formula,cutoffs){
+epsCC.lm = function(formula,l,u){
     if(class(formula)!="formula"){
         stop("First argument must be of class formula")}
-
-    if(length(cutoffs) != 2){stop("Invalid cutoffs vector given")}
 
     options(na.action="na.pass")
         epsdata = model.frame(formula)
@@ -61,11 +58,7 @@ epsCC.lm = function(formula,cutoffs){
 
         modeldata = cbind(epsdata[,1],covariates)
 
-        # Common variables in all methods, make covariates into matrices
-        l = min(cutoffs)
-        u = max(cutoffs)
-
-        model = epsCC.loglikmax(modeldata,cutoffs,hessian = TRUE)
+        model = epsCC.loglikmax(modeldata,l,u,hessian = TRUE)
 
         hessian = model[[1]]
         info = -1*ginv(hessian)
@@ -90,10 +83,7 @@ epsCC.lm = function(formula,cutoffs){
         y = epsdata[,1]
         modeldata = as.matrix(y)
 
-        l = min(cutoffs)
-        u = max(cutoffs)
-
-        model = epsCC.loglikmax(modeldata,cutoffs,hessian = TRUE)
+        model = epsCC.loglikmax(modeldata,l,u,hessian = TRUE)
 
         hessian = model[[1]]
         info = -1*ginv(hessian)

@@ -4,22 +4,13 @@
 \alias{epsAC.lm}
 \title{Fit linear model to EPS-full data}
 \usage{
-epsAC.lm(formula, hwe = FALSE, maf, confounder = FALSE, cx)
+epsAC.lm(formula, confounder)
 }
 \arguments{
 \item{formula}{an object of class \code{\link[stats]{formula}}, that
 describes the linear regression model to be fitted, see details}
 
-\item{hwe}{\code{TRUE} if Hardy-Weinberg equilibrium is assumed, default
-set to \code{FALSE}}
-
-\item{maf}{optional value for the minor allele frequencies under HWE}
-
-\item{confounder}{\code{TRUE} if distribution of SNPs should be
-assumed dependent on other (non-genetic) covariates,
-default set to \code{FALSE}}
-
-\item{cx}{optional vector of names of confounding (non-genetic) covariates}
+\item{confounder}{confounding (non-genetic) covariates}
 }
 \value{
 Maximum likelihood estimates of the model parameters,
@@ -27,8 +18,6 @@ with 95 percent confidence intervals
 \item{coefficients}{a vector of maximum likelihood estimates of the coefficients}
 \item{ci}{a matrix of confidence intervals for the coefficients}
 \item{sigma}{the estimated standard deviation}
-\item{maf}{the estimated minor allele frequencies, returned if
-\code{HWE = TRUE} but \code{MAF} is unspecified}
 }
 \description{
 Fit linear model to EPS-full data
@@ -43,21 +32,12 @@ The variables are taken from the environment that the
 function is called from.
 Both xe and xg can be matrices.
 
-The EPS-full design is such that the SNP genotype is only observed
+The EPS all case design is such that the SNP genotype is only observed
 for individuals with high and low values of the phenotype \code{y}.
 For remaining individuals, the unobserved genotype most be coded as NA.
-A SNP is assumed to have possible genotype 0, 1 or 2 according to the
-number of minor-alleles. The distribution of the genotype is assumed
-unknown and multinomially distributed. I.e. P(xg=0) = p0, P(xg=1) = p1,
-and P(xg=2) = p2 = 1-p0-p1.
-Hardy-Weinberg equilibrium with known or uknown MAF can be assumed,
-then p0 = (1-q)^2, p1 = 2q(1-q) and p2 = q^2, where q is the MAF.
-The parameters p0, p1, p2 can be given in \code{gfreq} if they are known.
 
-If confounder = TRUE, the genetic variables are assumed to be
-multinomally distributed, with different distribution
-for different levels of other (non-genetic) covariates, these can
-be specified by a vector of names \code{cx}.
+Confounders are discrete covariates (xe) and the distribution of xg is
+modelled for each level of unique value of xe.
 }
 \examples{
 

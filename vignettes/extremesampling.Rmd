@@ -1,7 +1,7 @@
 ---
 title: "Extreme phenotype sampling"
 author: "Thea Bjornland"
-date: "30 June 17"
+date: "20 June 18"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteEngine{knitr::rmarkdown}
@@ -9,41 +9,43 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This package provides functions for testing hypothesis of genetic association with a continously measurable trait when data are from the extreme phenotype sampling (EPS) design.
+This package provides functions for testing hypothesis of genetic association with a continously measurable trait when data are from the extreme phenotype sampling (EPS) design. Functions for fitting a linear model are also provided.
 
 ```{r}
     library(extremesampling)
 ```
 
 The assumed linear regression model is of the form
-$\mathbf{y} = X \beta + G \beta_g + \varepsilon$, where,
-where $y$ is the phenotype vector (continuosly measurable trait), $X$ is a matrix of 
+$$\mathbf{y} = X \beta + G \beta_g + \varepsilon,$$
+where $y$ is a phenotype vector (continuosly measurable trait), $X$ is a matrix of 
 non-genetic/environmental covariates (including intercept) and $G$ is a matrix 
-of genetic covariates. The residual vector $\varepsilon$ is multivariate normal
+of genetic covariates. The vector $\varepsilon$ is multivariate normal
 with mean $0$ and covariance $I\sigma^2$ ($I$ is the identity matrix).
+
+
+# Hypothesis tests
 
 We have implemented score tests for testing $H_0: \beta_g = 0$ against $H_0: \beta_g \neq 0$, for two special situations
 
-1. Test one genetic covariate (column of $G$) at a time (the number of columns of $G$ can then be very large).
+1. Test one genetic covariate (one column of $G$) at a time (the number of columns of $G$ can then be very large).
 2. Test all genetic variants simultaneously (then then number of columns of $G$ should be relatively small).
 
-Assume that $y_i$ and $X_i$ are observed for all $N$ individuals. 
-Assume that $G_i$ is observed only for extreme-phenotype individuals,
-defined by $y_i < l_i$ or $y_i > u_i$ (in vector form $\mathbf{y} < \mathbf{l}$,
-or $\mathbf{y} > \mathbf{u}$). Two special cases of this design are
 
-* The $y$-extreme sampling design: $u_i = u$ and $l_i = l$ for all $i$
-* The $z$-extreme sampling design: $u_i = u_z + X \widehat{\beta}$, $l_i = l_z + X \widehat{\beta}$, or equivalently, individual $i$ is extreme if $z_i < l_z$ or $z_i > u_z$, where $\mathbf{z}$ is the residual vector of the null model ($\mathbf{y} = X \beta + \varepsilon$) $\mathbf{z} = \mathbf{y} - X \widehat{\beta}$.
+We consider two types of data analysis
+
+1. Complete case analysis. The response $y_i$, non-genetic covariates $\mathbf{x}_i$ and genetic covarirates $\mathbf{g}_i$ are observed only for extreme phenotype individuals, i.e. individuals who satisfy $y_i < l_i$ or $y_i > u_i$, where thresholds $l_i$ and $u_i$ are known, but might be different for each individual in the sample.
+
+2. All case analysis. The response $y_i$ and non-genetic covariates $\mathbf{x}_i$ are observed for a full sample (randomly drawn from infinite population) while the genetic covarirates $\mathbf{g}_i$ are observed only for extreme phenotype individuals.
 
 
-We have implemented tests for 
+For complete case analysis, the thresholds must be supplied by the user. 
 
-* Complete case analysis. Only individuals with observed $y_i$, $X_i$ and $G_i$ are analysed.
-* All case analysis. All observations are included, and the genetic covariate is coded as `NA` for non extremes. 
+For all case analysis, the genotype matrix (or vector) must be of the same length as $\mathbf{y}$ and coded as NA where genotypes are not observed (non-extreme individuals). Further, it is assumed that the genotype is a discrete variable. The genotype distribution can be group-specific, and a matrix (dummy coded categorical covariates) that indicates these groups must be supplied. 
 
 ## Example data
 
-We simulate data to illustrate functions. We use the $z$-extreme sampling design.
+We simulate data to illustrate score test functions. Extreme phenotype thresholds are set accoriding to the quantiles of the residual phenotype distribution ($z$-extreme sampling).
+
 
 ```{r}
     N = 5000 # Number of individuals in a population
@@ -74,7 +76,7 @@ We simulate data to illustrate functions. We use the $z$-extreme sampling design
     GmatAC = Gmat; GmatAC[!extreme,] = NA
 ```
 
-## Single-variant association tests
+## Single variant association tests
 
 Each of the six columns of the genetic covariate matrix $G$ are tested one at a time 
 against the null model $\mathbf{y} = X\beta + \varepsilon$. 
@@ -83,56 +85,27 @@ against the null model $\mathbf{y} = X\beta + \varepsilon$.
 
 ### Complete case tests
 
-Under the $z$-extreme sampling design the complete case test is (asymptotically) equal to the score test for a random sample. We illustrate this by applying the `glm.scoretest()` function from the `Statmod` package. Furhtermore, as there are no confounders in this example, residual-based tests (model $\mathbf{z} = \gamma_0 + \gamma_g G + \bm \varepsilon$, test $H_0: \gamma_g = 0$) are (asymptotically) equal to the tests for the original regression model.
-
 ```{r,results='hide',message = FALSE}
-library(statmod)
-
 cc = epsCC.test(yCC~xe1CC + xe2CC, xg = GmatCC, l = li, u = ui)
-
-lm0 = glm(yCC~xe1CC + xe2CC)
-tRand = glm.scoretest(lm0,GmatCC)^2
-pRand = pchisq(tRand,1,lower.tail = FALSE)
-
-ccres= epsCC.test(zCC~1, xg = GmatCC, l = lz, u = uz)
-
-CCt = data.frame(cbind(cc$statistic, tRand, ccres$statistic))
-CCp = data.frame(cbind(cc$p.value, pRand, ccres$p.value))
-names(CCt) = c("CC", "glm.scoretest", "CC residual")
-names(CCp) = c("CC", "glm.scoretest", "CC residual")
-
 ```
-
 ```{r}
-print(CCt)
-print(CCp)
+print(cc)
 ```
 
 ### All case tests
 
-Under the $z$-extreme sampling design the all case tests are (asymptotically) equal to the complete case tests. If the genetic covariates are or could be correlated with a (discrete) non-genetic covariate (here `xe2`), then this must be added as an argument in functions. 
 
 ```{r,results='hide',message = FALSE}
-library(statmod)
-
-ac = epsAC.test(yAC~xe1AC + xe2AC, xg = GmatAC, confounder = xe2AC)
-
-acres= epsAC.test(zAC~1, xg = GmatAC)
-
-ACt = data.frame(cbind(ac$statistic, acres$statistic,cc$statistic))
-ACp = data.frame(cbind(ac$p.value, acres$p.value,cc$p.value))
-names(ACt) = c("AC", "AC residual", "CC")
-names(ACp) = c("AC", "AC residual", "CC")
-
+ac = epsAC.test(yAC~xe1AC + xe2AC, xg = GmatAC)
 ```
 
 ```{r}
-print(ACt)
-print(ACp)
+print(ac)
 ```
 
 
-## Multiple-variant association tests
+
+## Multiple variant association tests
 
 ### Complete case tests
 
@@ -147,29 +120,14 @@ cc_c = epsCC.rv.test(yCC~xe1CC + xe2CC, xg = GmatCC, l = li, u = ui, method = "c
 # Variance component test (weights = 1 for all variants)
 cc_v = epsCC.rv.test(yCC~xe1CC + xe2CC, xg = GmatCC, l = li, u = ui, method = "varcomp")$p.value
 
-
-# Residual-based tests
-# Direct test of all 6 variants
-ccres_d = epsCC.rv.test(zCC~1, xg = GmatCC, l = lz, u = uz)$p.value
-
-# Collapsing test (weights = 1 for all variants)
-ccres_c = epsCC.rv.test(zCC~1, xg = GmatCC, l = lz, u = uz, method = "collapse")$p.value
-
-# Variance component test (weights = 1 for all variants)
-ccres_v = epsCC.rv.test(zCC~1, xg = GmatCC, l = lz, u = uz, method = "varcomp")$p.value
-
 ccall = data.frame(cbind(cc_d, cc_c, cc_v))
 names(ccall) = c("CC", "CC collapse", "CC varcomp")
-
-ccallres = data.frame(cbind(ccres_d, ccres_c, ccres_v))
-names(ccallres) = c("CC res", "CC res collapse", "CC res varcomp")
-
 ```
 
 ```{r}
 print(ccall)
-print(ccallres)
 ```
+
 
 ### All case tests
 
@@ -184,26 +142,65 @@ ac_c = epsAC.rv.test(yAC~xe1AC + xe2AC, xg = GmatAC, method = "collapse")$p.valu
 # Variance component test (weights = 1 for all variants)
 ac_v = epsAC.rv.test(yAC~xe1AC + xe2AC, xg = GmatAC, method = "varcomp")$p.value
 
-
-# Residual-based tests
-# Direct test of all 6 variants
-acres_d = epsAC.rv.test(zAC~1, xg = GmatAC)$p.value
-
-# Collapsing test (weights = 1 for all variants)
-acres_c = epsAC.rv.test(zAC~1, xg = GmatAC, method = "collapse")$p.value
-
-# Variance component test (weights = 1 for all variants)
-acres_v = epsAC.rv.test(zAC~1, xg = GmatAC, method = "varcomp")$p.value
-
 acall = data.frame(cbind(ac_d, ac_c, ac_v))
 names(acall) = c("AC", "AC collapse", "AC varcomp")
-
-acallres = data.frame(cbind(acres_d, acres_c, acres_v))
-names(acallres) = c("AC res", "AC res collapse", "AC res varcomp")
-
 ```
 
 ```{r}
 print(acall)
-print(acallres)
 ```
+
+
+# Regression models
+
+## Example data
+
+We simulate data to illustrate score test functions. Extreme phenotype thresholds are equal for all individuals
+
+
+```{r}
+    N = 5000 # Number of individuals in a population
+    xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
+    xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
+    Gmat = cbind(rbinom(N,2,0.4),rbinom(N,2,0.1)) # Genetic variants
+    
+    # Generate phenotype
+    betag = c(0.5,1)
+    y = rnorm(N, mean = 10+5*xe1+1*xe2+Gmat%*%betag, sd = 4)
+    
+    # Identify extremes, here upper and lower 25% of residual phenotype distribution
+    u = quantile(y,probs = 3/4,na.rm=TRUE)
+    l = quantile(y,probs = 1/4,na.rm=TRUE)
+    extreme = (y < l) | (y >= u)
+
+    # Create the EPS complete case data set
+    yCC = y[extreme]
+    xe1CC = xe1[extreme]; xe2CC = xe2[extreme]
+    GmatCC = Gmat[extreme,]
+    
+    # Create the EPS all case data set
+    yAC = y
+    xe1AC = xe1; xe2AC = xe2
+    GmatAC = Gmat; GmatAC[!extreme,] = NA
+```
+
+### Complete case analysis
+
+```{r,results='hide',message = FALSE}
+cclm = epsCC.lm(yCC~xe1CC + xe2CC + GmatCC, l = li, u = ui)
+```
+
+```{r}
+print(cclm$coefficients)
+```
+
+### All case analysis
+
+```{r,results='hide',message = FALSE}
+aclm = epsAC.lm(yAC~xe1AC + xe2AC + GmatAC)
+```
+
+```{r}
+print(aclm$coefficients)
+```
+

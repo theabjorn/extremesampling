@@ -4,7 +4,7 @@
 \alias{epsCC.rv.test}
 \title{Score test EPS-CC rare variants}
 \usage{
-epsCC.rv.test(nullmodel, xg, l, u, randomindex, method = "simple", weights)
+epsCC.rv.test(nullmodel, xg, l, u, method = "simple", weights)
 }
 \arguments{
 \item{nullmodel}{an object of class \code{\link[stats]{formula}}, that
@@ -15,9 +15,6 @@ describes the linear regression model under the null hypothesis}
 \item{l}{cutoff for lower extreme, can be sample-specific or general}
 
 \item{u}{cutoff for upper extreme, can be sample-specific or general}
-
-\item{randomindex}{a binary vector that indicates if samples are random
-or extreme}
 
 \item{method}{testing the burden using \code{simple}, \code{collapsing} or
 \code{varcomp} method, see details}

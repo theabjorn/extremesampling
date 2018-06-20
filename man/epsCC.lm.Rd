@@ -4,17 +4,15 @@
 \alias{epsCC.lm}
 \title{Fit linear model to EPS-only data}
 \usage{
-epsCC.lm(formula, cutoffs, randomindex)
+epsCC.lm(formula, l, u)
 }
 \arguments{
 \item{formula}{an object of class \code{\link[stats]{formula}}, that
 describes the linear regression model to be fitted, see details}
 
-\item{cutoffs}{a vector \code{c(l,u)} of the lower and upper cut-offs used
-for extreme sampling}
+\item{l}{cutoff for lower extreme, can be sample-specific or general}
 
-\item{randomindex}{a vector which indicates if observations are from a random
-or extreme sample}
+\item{u}{cutoff for upper extreme, can be sample-specific or general}
 }
 \value{
 Maximum likelihood estimates of the model parameters,
@@ -39,8 +37,7 @@ Both xe and xg can be matrices.
 
 The EPS-only design is such that data is only available
 for individuals with high and low values of the phenotype \code{y}. The
-cut-offs \code{l} and \code{u} that specify the sampling must be specified
-in the \code{cutoffs} argument.
+cut-offs \code{l} and \code{u} that specify the sampling must be given
 
 Thus, the data set must consist of observations only for extreme individuals
 \code{y > u} or \code{y < l} where \code{y} is the response (phenotype)
