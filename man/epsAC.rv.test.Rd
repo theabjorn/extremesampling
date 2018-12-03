@@ -55,15 +55,29 @@ using the function \code{\link[CompQuadForm]{davies}} in the CompQuadForm
 package.
 }
 \examples{
-# Simple test
-epsAC.rv.test(phenoRV~EPSxe,xg=gRV)
-# Collapsing test
-epsAC.rv.test(phenoRV~EPSxe,xg=gRV,method = "collapse")
-# Variance component test
-epsAC.rv.test(phenoRV~EPSxe,xg=gRV,method = "varcomp")
+N = 1000
+# Generate environmental covariates
+xe1 = rbinom(N,1,0.5); xe2 = rnorm(N,2,1)
+# Generate genetic covariates (rare variants)
+cv1 = rbinom(N,2,0.005); cv2 = rbinom(N,2,0.001)
+# Generate phenotype
+y = rnorm(N, mean = 1 + 2*xe1 + 3*xe2 + 0.5*cv1 + 0.1*cv2,2)
+# Define extremes
+u = quantile(y,probs = 3/4,na.rm=TRUE); l = quantile(y,probs = 1/4,na.rm=TRUE)
+extreme = (y < l) | (y >= u)
+cv1[!extreme] = NA; cv2[!extreme] = NA;
 
-Control for include confounders
-epsAC.rv.test(phenoRV~EPSxe1 + EPSxe2,xg=gRV,confounder = EPSxe1)
+# All case data set
+xe_AC = cbind(xe1, xe2)
+xg_AC = cbind(cv1, cv2)
+y_AC = y
+
+# Simple test
+epsAC.rv.test(y_AC ~ xe_AC,xg = xg_AC)
+# Collapsing test
+epsAC.rv.test(y_AC ~ xe_AC,xg = xg_AC,method = "collapse")
+# Variance component test
+epsAC.rv.test(y_AC ~ xe_AC,xg = xg_AC,method = "varcomp")
 }
 \references{
 \insertRef{quadRpackage}{extremesampling},

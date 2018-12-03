@@ -42,5 +42,23 @@ individuals. The cut-offs \code{l} and \code{u} that specify the
 sampling must be given in the \code{cutoffs} argument.
 }
 \examples{
-epsCC.test(phenoCV_CC ~ xeCV_CC,xg = gCV_CC,lCV,uCV)
+N = 1000
+# Generate environmental covariates
+xe1 = rbinom(N,1,0.5); xe2 = rnorm(N,2,1)
+# Generate genetic covariates (common variants)
+cv1 = rbinom(N,2,0.2); cv2 = rbinom(N,2,0.2)
+# Generate phenotype
+y = rnorm(N, mean = 1 + 2*xe1 + 3*xe2 + 0.5*cv1 + 0.1*cv2,2)
+# Define extremes
+u = quantile(y,probs = 3/4,na.rm=TRUE); l = quantile(y,probs = 1/4,na.rm=TRUE)
+extreme = (y < l) | (y >= u)
+cv1[!extreme] = NA; cv2[!extreme] = NA;
+
+# Complete case data set
+xe_CC = cbind(xe1[extreme], xe2[extreme])
+xg_CC = cbind(cv1[extreme], cv2[extreme])
+y_CC = y[extreme]
+
+epsCC.test(y_CC ~ xe_CC,xg = xg_CC,l,u)
+
 }

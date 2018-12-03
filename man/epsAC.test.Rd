@@ -40,7 +40,23 @@ Confounders are discrete covariates (xe) and the distribution of xg is
 modelled for each level of unique value of xe.
 }
 \examples{
-# Testing
-epsAC.test(phenoCV ~ EPSxe,xg = gCV)
-epsAC.test(phenoCV ~ EPSxe1 + EPSxe2,xg = gCV,confounder = EPSxe1)
+
+N = 1000
+# Generate environmental covariates
+xe1 = rbinom(N,1,0.5); xe2 = rnorm(N,2,1)
+# Generate genetic covariates (common variants)
+cv1 = rbinom(N,2,0.2); cv2 = rbinom(N,2,0.2)
+# Generate phenotype
+y = rnorm(N, mean = 1 + 2*xe1 + 3*xe2 + 0.5*cv1 + 0.1*cv2,2)
+# Define extremes
+u = quantile(y,probs = 3/4,na.rm=TRUE); l = quantile(y,probs = 1/4,na.rm=TRUE)
+extreme = (y < l) | (y >= u)
+cv1[!extreme] = NA; cv2[!extreme] = NA;
+
+# All case data set
+xe_AC = cbind(xe1, xe2)
+xg_AC = cbind(cv1, cv2)
+y_AC = y
+epsAC.test(y_AC ~ xe_AC,xg = xg_AC)
+epsAC.test(y_AC ~ xe1 + xe2,xg = xg_AC, confounder = xe1)
 }

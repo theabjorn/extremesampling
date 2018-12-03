@@ -58,12 +58,28 @@ package.
 }
 \examples{
 
-# Simple test
-epsCC.rv.test(phenoRV_CC~xeRV_CC,xg=gRV_CC,l=lRV,u=uRV)
+N = 1000
+# Generate environmental covariates
+xe1 = rbinom(N,1,0.5); xe2 = rnorm(N,2,1)
+# Generate genetic covariates (common variants)
+cv1 = rbinom(N,2,0.2); cv2 = rbinom(N,2,0.2)
+# Generate phenotype
+y = rnorm(N, mean = 1 + 2*xe1 + 3*xe2 + 0.5*cv1 + 0.1*cv2,2)
+# Define extremes
+u = quantile(y,probs = 3/4,na.rm=TRUE); l = quantile(y,probs = 1/4,na.rm=TRUE)
+extreme = (y < l) | (y >= u)
+cv1[!extreme] = NA; cv2[!extreme] = NA;
+
+# Complete case data set
+xe_CC = cbind(xe1[extreme], xe2[extreme])
+xg_CC = cbind(cv1[extreme], cv2[extreme])
+y_CC = y[extreme]
+
+epsCC.rv.test(y_CC ~ xe_CC,xg = xg_CC,l,u)
 # Collapsing test
-epsCC.rv.test(phenoRV_CC~xeRV_CC,xg=gRV_CC,l=lRV,u=uRV,method = "collapse")
+epsCC.rv.test(y_CC ~ xe_CC,xg = xg_CC,method = "collapse",l,u)
 # Variance component test
-epsCC.rv.test(phenoRV_CC~xeRV_CC,xg=gRV_CC,l=lRV,u=uRV,method = "varcomp")
+epsCC.rv.test(y_CC ~ xe_CC,xg = xg_CC,method = "varcomp",l,u)
 
 }
 \references{

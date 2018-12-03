@@ -1,15 +1,16 @@
 ---
 title: "Extreme phenotype sampling"
 author: "Thea Bjornland"
-date: "20 June 18"
-output: rmarkdown::html_vignette
+date: "3 Dec 18"
+output: pdf_document
+# output: rmarkdown::html_vignette
 vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteIndexEntry{Extreme phenotype sampling}
   %\VignetteEncoding{UTF-8}
 ---
 
-This package provides functions for testing hypothesis of genetic association with a continously measurable trait when data are from the extreme phenotype sampling (EPS) design. Functions for fitting a linear model are also provided.
+This package provides functions for testing hypothesis of genetic association with a continously measurable trait when data are from the extreme phenotype sampling (EPS) design.
 
 ```{r}
     library(extremesampling)
@@ -150,57 +151,4 @@ names(acall) = c("AC", "AC collapse", "AC varcomp")
 print(acall)
 ```
 
-
-# Regression models
-
-## Example data
-
-We simulate data to illustrate score test functions. Extreme phenotype thresholds are equal for all individuals
-
-
-```{r}
-    N = 5000 # Number of individuals in a population
-    xe1 = rnorm(n = N, mean = 2, sd = 1) # Environmental covariate
-    xe2 = rbinom(n = N, size = 1, prob = 0.3) # Environmental covariate
-    Gmat = cbind(rbinom(N,2,0.4),rbinom(N,2,0.1)) # Genetic variants
-    
-    # Generate phenotype
-    betag = c(0.5,1)
-    y = rnorm(N, mean = 10+5*xe1+1*xe2+Gmat%*%betag, sd = 4)
-    
-    # Identify extremes, here upper and lower 25% of residual phenotype distribution
-    u = quantile(y,probs = 3/4,na.rm=TRUE)
-    l = quantile(y,probs = 1/4,na.rm=TRUE)
-    extreme = (y < l) | (y >= u)
-
-    # Create the EPS complete case data set
-    yCC = y[extreme]
-    xe1CC = xe1[extreme]; xe2CC = xe2[extreme]
-    GmatCC = Gmat[extreme,]
-    
-    # Create the EPS all case data set
-    yAC = y
-    xe1AC = xe1; xe2AC = xe2
-    GmatAC = Gmat; GmatAC[!extreme,] = NA
-```
-
-### Complete case analysis
-
-```{r,results='hide',message = FALSE}
-cclm = epsCC.lm(yCC~xe1CC + xe2CC + GmatCC, l = li, u = ui)
-```
-
-```{r}
-print(cclm$coefficients)
-```
-
-### All case analysis
-
-```{r,results='hide',message = FALSE}
-aclm = epsAC.lm(yAC~xe1AC + xe2AC + GmatAC)
-```
-
-```{r}
-print(aclm$coefficients)
-```
 
